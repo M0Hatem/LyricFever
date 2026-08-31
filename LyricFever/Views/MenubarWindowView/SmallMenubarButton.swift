@@ -7,6 +7,7 @@
 
 import SwiftUI
 
+@MainActor
 public struct SmallMenubarButtonStyle: ButtonStyle {
     let imageText: String
     let buttonState: ButtonState

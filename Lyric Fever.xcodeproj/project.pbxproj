@@ -28,6 +28,9 @@
 		8FACE8D6005F32E02BD3CA79 /* ParserExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F51F63B76A248B93A17240F /* ParserExtensions.swift */; };
 		8FB31A79EBD3180EBE2B0849 /* SongObject.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F0D60A44B594E702D6658BC /* SongObject.swift */; };
 		8FE98EEFA1E173EAA52BB047 /* SongObjectExtensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F5C4332F5E1EDAE86E0D9D0 /* SongObjectExtensions.swift */; };
+		8F1100010000000000000001 /* IDToColor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F1100010000000000000011 /* IDToColor.swift */; };
+		8F1100020000000000000002 /* SongToLocale.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F1100020000000000000022 /* SongToLocale.swift */; };
+		8F1100030000000000000003 /* PersistentIDToSpotify.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F1100030000000000000033 /* PersistentIDToSpotify.swift */; };
 		8FF2D4D27B71066E40A2D662 /* Lyrics.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 8FF2D4D17B71066E40A2D662 /* Lyrics.xcdatamodeld */; };
 		8F102D439CF69D88948FC330 /* LyricProvider.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FFAC5D90429136CD72EAF12 /* LyricProvider.swift */; };
 		8FB1CBB250365D066ECC75E0 /* LyricProviderType.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FC06D49A50FA253EF82FEE0 /* LyricProviderType.swift */; };
@@ -183,6 +186,9 @@
 		8F51F63B76A248B93A17240F /* ParserExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ParserExtensions.swift"; sourceTree = "<group>"; };
 		8F0D60A44B594E702D6658BC /* SongObject.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SongObject.swift"; sourceTree = "<group>"; };
 		8F5C4332F5E1EDAE86E0D9D0 /* SongObjectExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SongObjectExtensions.swift"; sourceTree = "<group>"; };
+		8F1100010000000000000011 /* IDToColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "IDToColor.swift"; sourceTree = "<group>"; };
+		8F1100020000000000000022 /* SongToLocale.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SongToLocale.swift"; sourceTree = "<group>"; };
+		8F1100030000000000000033 /* PersistentIDToSpotify.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PersistentIDToSpotify.swift"; sourceTree = "<group>"; };
 		8F48E36C317E4B80A746E94E /* contents */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "contents"; sourceTree = "<group>"; };
 		8FFAC5D90429136CD72EAF12 /* LyricProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LyricProvider.swift"; sourceTree = "<group>"; };
 		8FC06D49A50FA253EF82FEE0 /* LyricProviderType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LyricProviderType.swift"; sourceTree = "<group>"; };
@@ -488,6 +494,9 @@
 				8FF2D4D17B71066E40A2D662 /* Lyrics.xcdatamodeld */,
 				8F0D60A44B594E702D6658BC /* SongObject.swift */,
 				8F5C4332F5E1EDAE86E0D9D0 /* SongObjectExtensions.swift */,
+				8F1100010000000000000011 /* IDToColor.swift */,
+				8F1100020000000000000022 /* SongToLocale.swift */,
+				8F1100030000000000000033 /* PersistentIDToSpotify.swift */,
 			);
 			path = "CoreData";
 			sourceTree = "<group>";
@@ -922,6 +931,9 @@
 				8FACE8D6005F32E02BD3CA79 /* ParserExtensions.swift in Sources */,
 				8FB31A79EBD3180EBE2B0849 /* SongObject.swift in Sources */,
 				8FE98EEFA1E173EAA52BB047 /* SongObjectExtensions.swift in Sources */,
+				8F1100010000000000000001 /* IDToColor.swift in Sources */,
+				8F1100020000000000000002 /* SongToLocale.swift in Sources */,
+				8F1100030000000000000003 /* PersistentIDToSpotify.swift in Sources */,
 				8FF2D4D27B71066E40A2D662 /* Lyrics.xcdatamodeld in Sources */,
 				8F102D439CF69D88948FC330 /* LyricProvider.swift in Sources */,
 				8FB1CBB250365D066ECC75E0 /* LyricProviderType.swift in Sources */,

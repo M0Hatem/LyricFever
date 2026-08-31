@@ -27,6 +27,7 @@ struct VisualEffectView: NSViewRepresentable {
     }
 }
 
+@MainActor
 struct KaraokeView: View {
     @Environment(ViewModel.self) var viewmodel
     @AppStorage("karaokeTransparency") var karaokeTransparency: Double = 50
