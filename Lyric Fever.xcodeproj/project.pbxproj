@@ -1262,8 +1262,8 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/sindresorhus/KeyboardShortcuts";
 			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 2.3.0;
+				kind = exactVersion;
+				version = 2.0.1;
 			};
 		};
 		8F1979932DA72D49008C113D /* XCRemoteSwiftPackageReference "Mecab-Swift" */ = {
