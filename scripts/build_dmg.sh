@@ -13,10 +13,13 @@ STAGING_DIR="${BUILD_DIR}/dmg_staging"
 TMP_DMG="${BUILD_DIR}/${DMG_NAME}_temp.dmg"
 VOL_NAME="Lyric Fever"
 
-echo "==> 1. Building ${APP_NAME} in Release configuration..."
-DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcodebuild \
+DEVELOPER_DIR="${DEVELOPER_DIR:-$(xcode-select -p)}"
+ARCH="${ARCH:-$(uname -m)}"
+
+echo "==> 1. Building ${APP_NAME} in Release configuration (arch: ${ARCH})..."
+DEVELOPER_DIR="${DEVELOPER_DIR}" xcodebuild \
     -scheme "SpotifyLyricsInMenubar" \
-    -destination 'platform=macOS,arch=x86_64' \
+    -destination "platform=macOS,arch=${ARCH}" \
     -configuration Release \
     -derivedDataPath "${DERIVED_DATA_DIR}" \
     -skipMacroValidation \
@@ -42,7 +45,7 @@ ln -s /Applications "${STAGING_DIR}/Applications"
 
 # Generate @2x Retina Background Image
 echo "==> 4. Generating fluid ambient background artwork..."
-DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer xcrun swiftc \
+DEVELOPER_DIR="${DEVELOPER_DIR}" xcrun swiftc \
     "${PROJECT_DIR}/scripts/create_dmg_background.swift" \
     -o "${BUILD_DIR}/create_dmg_bg"
 "${BUILD_DIR}/create_dmg_bg" "${STAGING_DIR}/.background"
@@ -75,7 +78,7 @@ fi
 sleep 2
 
 echo "==> 7. Applying Finder layout & aesthetic styling..."
-osascript <<EOF
+osascript <<EOF || true
 tell application "Finder"
     tell disk "${VOL_NAME}"
         open
@@ -110,7 +113,10 @@ EOF
 
 # Set custom volume icon flag if icon exists
 if [ -f "${MOUNT_DIR}/.VolumeIcon.icns" ]; then
-    DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer /Applications/Xcode.app/Contents/Developer/usr/bin/SetFile -a C "${MOUNT_DIR}" || true
+    SETFILE_BIN="$(DEVELOPER_DIR="${DEVELOPER_DIR}" xcrun -find SetFile 2>/dev/null || which SetFile 2>/dev/null || true)"
+    if [ -n "${SETFILE_BIN}" ]; then
+        "${SETFILE_BIN}" -a C "${MOUNT_DIR}" || true
+    fi
 fi
 
 # Ensure disk synchronizes

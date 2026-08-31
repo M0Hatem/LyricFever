@@ -1,0 +1,86 @@
+name: Build & Release
+
+on:
+  push:
+    branches:
+      - main
+      - feature/apple-music-fullscreen
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build DMG & Publish Release
+    runs-on: macos-14
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Select Xcode Version
+        run: |
+          sudo xcode-select -s /Applications/Xcode_15.4.app || sudo xcode-select -s /Applications/Xcode_15.2.app || sudo xcode-select -s /Applications/Xcode.app
+          xcodebuild -version
+
+      - name: Build Application & Package DMG
+        run: |
+          chmod +x scripts/build_dmg.sh
+          ./scripts/build_dmg.sh
+
+      - name: Generate Checksums & Metadata
+        id: metadata
+        run: |
+          cd build
+          shasum -a 256 LyricFever.dmg > LyricFever.dmg.sha256
+          echo "SHA256=$(cat LyricFever.dmg.sha256 | awk '{print $1}')" >> $GITHUB_OUTPUT
+          echo "DATE=$(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> $GITHUB_OUTPUT
+
+      - name: Upload DMG Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: LyricFever-DMG
+          path: |
+            build/LyricFever.dmg
+            build/LyricFever.dmg.sha256
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Publish GitHub Release (Tagged)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            build/LyricFever.dmg
+            build/LyricFever.dmg.sha256
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+
+      - name: Publish / Update Rolling Release (Branches)
+        if: "!startsWith(github.ref, 'refs/tags/v')"
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "LyricFever Latest Build (${{ github.ref_name }})"
+          body: |
+            ## LyricFever Automated Build
+            
+            - **Commit**: `${{ github.sha }}`
+            - **Branch**: `${{ github.ref_name }}`
+            - **Built at**: `${{ steps.metadata.outputs.DATE }}`
+            - **SHA256 Checksum**:
+              ```
+              ${{ steps.metadata.outputs.SHA256 }}
+              ```
+            
+            ### Installation
+            1. Download `LyricFever.dmg` below.
+            2. Open the disk image and drag **Lyric Fever** to your **Applications** folder.
+          files: |
+            build/LyricFever.dmg
+            build/LyricFever.dmg.sha256
+          prerelease: true
+          make_latest: true
