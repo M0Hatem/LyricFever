@@ -11,6 +11,7 @@ import ColorKit
 import Combine
 import TipKit
 
+@MainActor
 struct FullscreenView: View {
     @Environment(ViewModel.self) var viewmodel
 

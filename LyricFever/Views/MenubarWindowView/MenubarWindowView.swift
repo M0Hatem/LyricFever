@@ -11,6 +11,7 @@ import LaunchAtLogin
 import Translation
 #endif
 
+@MainActor
 struct MenubarWindowView: View {
     @Environment(\.openURL) var openURL
     @Environment(\.openWindow) var openWindow

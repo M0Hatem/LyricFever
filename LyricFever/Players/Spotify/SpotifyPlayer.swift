@@ -8,7 +8,7 @@
 import ScriptingBridge
 import AppKit
 
-class SpotifyPlayer: @MainActor Player {
+class SpotifyPlayer: Player {
     var spotifyScript: SpotifyApplication? = SBApplication(bundleIdentifier: "com.spotify.client")
     var trackID: String? {
         spotifyScript?.currentTrack?.spotifyUrl?.spotifyProcessedUrl()

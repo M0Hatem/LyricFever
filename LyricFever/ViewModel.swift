@@ -499,8 +499,8 @@ import MediaRemoteAdapter
         userDefaultStorage.hasTranslated = true
     }
     
-    @MainActor
     #if canImport(Translation)
+    @MainActor
     func translationTask(_ session: TranslationSession) async {
         isFetchingTranslation = true
         let translationResponse = await TranslationService.translationTask(session, request: currentlyPlayingLyrics.map { TranslationSession.Request(lyric: $0) })

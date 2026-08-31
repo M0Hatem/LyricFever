@@ -14,8 +14,7 @@
 //
 import SwiftUI
 
-@MainActor
-struct MulticolorGradient: View, @MainActor Animatable {
+struct MulticolorGradient: View, Animatable {
     var points: [ColorSpot]
     var bias: Float = 0.001
     var power: Float = 2
