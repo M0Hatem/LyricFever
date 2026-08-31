@@ -194,21 +194,9 @@ struct FullscreenView: View {
             return .handled
         }
         .onKeyPress(.escape) {
-            exitFullscreenAndClose()
+            FullscreenWindowController.shared.close()
             return .handled
         }
-        .onAppear {
-            DispatchQueue.main.async {
-                if let window = NSApp.windows.first(where: { $0.title.contains("Fullscreen") || $0.identifier?.rawValue == "fullscreen" }) ?? NSApp.keyWindow {
-                    enterFullscreenMode(for: window)
-                }
-            }
-        }
-        .background(
-            FullscreenWindowAccessor { window in
-                enterFullscreenMode(for: window)
-            }
-        )
     }
 
     // MARK: - Subviews
@@ -329,122 +317,5 @@ struct FullscreenView: View {
         }
         let modifiedColor = NSColor(hue: hue, saturation: saturation, brightness: brightness, alpha: alpha)
         return Color(modifiedColor)
-    }
-}
-
-// MARK: - Fullscreen Window Lifecycle Management
-
-@MainActor
-func enterFullscreenMode(for window: NSWindow) {
-    FullscreenWindowDelegate.shared.managedWindow = window
-    window.delegate = FullscreenWindowDelegate.shared
-    window.collectionBehavior = [.fullScreenPrimary, .fullScreenAllowsTiling]
-    window.titleVisibility = .hidden
-    window.titlebarAppearsTransparent = true
-    window.isOpaque = true
-    window.tabbingMode = .disallowed
-    
-    NSApp.setActivationPolicy(.regular)
-    NSApp.activate(ignoringOtherApps: true)
-    window.makeKeyAndOrderFront(nil)
-    
-    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-        if !window.styleMask.contains(.fullScreen) {
-            window.toggleFullScreen(nil)
-        }
-    }
-}
-
-@MainActor
-func exitFullscreenAndClose() {
-    ViewModel.shared.fullscreen = false
-    
-    let fullscreenWindows = NSApp.windows.filter {
-        $0.title.contains("Fullscreen") || $0.identifier?.rawValue == "fullscreen" || $0.styleMask.contains(.fullScreen)
-    }
-    
-    if fullscreenWindows.isEmpty {
-        NSApp.setActivationPolicy(.accessory)
-        return
-    }
-    
-    for window in fullscreenWindows {
-        if window.styleMask.contains(.fullScreen) {
-            window.toggleFullScreen(nil)
-        } else {
-            window.orderOut(nil)
-            window.close()
-            let hasOtherRegularWindow = NSApp.windows.contains(where: {
-                $0.isVisible && ($0.identifier?.rawValue == "onboarding" || $0.identifier?.rawValue == "search" || $0.identifier?.rawValue == "update")
-            })
-            if !hasOtherRegularWindow {
-                NSApp.setActivationPolicy(.accessory)
-            }
-        }
-    }
-}
-
-final class FullscreenWindowDelegate: NSObject, NSWindowDelegate {
-    static let shared = FullscreenWindowDelegate()
-    weak var managedWindow: NSWindow?
-
-    func windowWillClose(_ notification: Notification) {
-        Task { @MainActor in
-            ViewModel.shared.fullscreen = false
-            let hasOtherVisible = NSApp.windows.contains(where: {
-                $0.isVisible && $0 != (notification.object as? NSWindow) && ($0.identifier?.rawValue == "onboarding" || $0.identifier?.rawValue == "search" || $0.identifier?.rawValue == "update")
-            })
-            if !hasOtherVisible {
-                NSApp.setActivationPolicy(.accessory)
-            }
-        }
-    }
-
-    func windowDidExitFullScreen(_ notification: Notification) {
-        Task { @MainActor in
-            ViewModel.shared.fullscreen = false
-            if let window = notification.object as? NSWindow {
-                window.orderOut(nil)
-                window.close()
-            }
-            let hasOtherVisible = NSApp.windows.contains(where: {
-                $0.isVisible && $0 != (notification.object as? NSWindow) && ($0.identifier?.rawValue == "onboarding" || $0.identifier?.rawValue == "search" || $0.identifier?.rawValue == "update")
-            })
-            if !hasOtherVisible {
-                NSApp.setActivationPolicy(.accessory)
-            }
-        }
-    }
-}
-
-private var fullscreenWindowDelegateKey: UInt8 = 0
-
-struct FullscreenWindowAccessor: NSViewRepresentable {
-    let callback: (NSWindow) -> Void
-
-    func makeCoordinator() -> FullscreenWindowDelegate {
-        FullscreenWindowDelegate.shared
-    }
-
-    func makeNSView(context: Context) -> NSView {
-        let nsView = NSView()
-        DispatchQueue.main.async {
-            if let window = nsView.window {
-                window.delegate = context.coordinator
-                objc_setAssociatedObject(window, &fullscreenWindowDelegateKey, context.coordinator, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
-                callback(window)
-            }
-        }
-        return nsView
-    }
-
-    func updateNSView(_ nsView: NSView, context: Context) {
-        DispatchQueue.main.async {
-            if let window = nsView.window {
-                window.delegate = context.coordinator
-                objc_setAssociatedObject(window, &fullscreenWindowDelegateKey, context.coordinator, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
-                callback(window)
-            }
-        }
     }
 }

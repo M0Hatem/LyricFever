@@ -77,6 +77,7 @@
 		8FD5BDE2F2237A3D97484609 /* FullscreenShortcutsOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F468B73EC9347A632DAABCB /* FullscreenShortcutsOverlayView.swift */; };
 		8F9EE02BD1CC21FA2206EB86 /* FullscreenTimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F23F6D398F1347809951693 /* FullscreenTimelineView.swift */; };
 		8F34352CA08B17F1CCF1C73D /* FullscreenView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F56D3BF025D9CF8FB7ACD3F /* FullscreenView.swift */; };
+		8FE19A20B724DC81729A1001 /* FullscreenWindowController.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FE19A20B724DC81729A1002 /* FullscreenWindowController.swift */; };
 		8F8FF04FEAC4BE21ECD41252 /* LyricsNSScrollView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F9B968F6580B4631682B095 /* LyricsNSScrollView.swift */; };
 		8F866649551367A3558F70FF /* NewSettingsTip.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F929E8BB933197F52612179 /* NewSettingsTip.swift */; };
 		8F07D08657A2038E9F45445E /* ArtworkFluid.metal in Sources */ = {isa = PBXBuildFile; fileRef = 8FC357840D8740CE35E09DF2 /* ArtworkFluid.metal */; };
@@ -233,6 +234,7 @@
 		8F468B73EC9347A632DAABCB /* FullscreenShortcutsOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FullscreenShortcutsOverlayView.swift"; sourceTree = "<group>"; };
 		8F23F6D398F1347809951693 /* FullscreenTimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FullscreenTimelineView.swift"; sourceTree = "<group>"; };
 		8F56D3BF025D9CF8FB7ACD3F /* FullscreenView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FullscreenView.swift"; sourceTree = "<group>"; };
+		8FE19A20B724DC81729A1002 /* FullscreenWindowController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "FullscreenWindowController.swift"; sourceTree = "<group>"; };
 		8F9B968F6580B4631682B095 /* LyricsNSScrollView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LyricsNSScrollView.swift"; sourceTree = "<group>"; };
 		8F929E8BB933197F52612179 /* NewSettingsTip.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "NewSettingsTip.swift"; sourceTree = "<group>"; };
 		8FC357840D8740CE35E09DF2 /* ArtworkFluid.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = "ArtworkFluid.metal"; sourceTree = "<group>"; };
@@ -510,6 +512,7 @@
 				8F468B73EC9347A632DAABCB /* FullscreenShortcutsOverlayView.swift */,
 				8F23F6D398F1347809951693 /* FullscreenTimelineView.swift */,
 				8F56D3BF025D9CF8FB7ACD3F /* FullscreenView.swift */,
+				8FE19A20B724DC81729A1002 /* FullscreenWindowController.swift */,
 				8F9B968F6580B4631682B095 /* LyricsNSScrollView.swift */,
 				8F929E8BB933197F52612179 /* NewSettingsTip.swift */,
 			);
@@ -841,6 +844,7 @@
 				8FD5BDE2F2237A3D97484609 /* FullscreenShortcutsOverlayView.swift in Sources */,
 				8F9EE02BD1CC21FA2206EB86 /* FullscreenTimelineView.swift in Sources */,
 				8F34352CA08B17F1CCF1C73D /* FullscreenView.swift in Sources */,
+				8FE19A20B724DC81729A1001 /* FullscreenWindowController.swift in Sources */,
 				8F8FF04FEAC4BE21ECD41252 /* LyricsNSScrollView.swift in Sources */,
 				8F866649551367A3558F70FF /* NewSettingsTip.swift in Sources */,
 				8F07D08657A2038E9F45445E /* ArtworkFluid.metal in Sources */,

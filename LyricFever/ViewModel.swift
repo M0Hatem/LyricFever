@@ -162,21 +162,9 @@ import MediaRemoteAdapter
         }
         set {
             if newValue {
-                fullscreen = true
-                NSApp.setActivationPolicy(.regular)
-                NSApp.activate(ignoringOtherApps: true)
+                FullscreenWindowController.shared.show()
             } else {
-                fullscreen = false
-                for window in NSApp.windows where window.title.contains("Fullscreen") || window.identifier?.rawValue == "fullscreen" {
-                    if window.styleMask.contains(.fullScreen) {
-                        window.toggleFullScreen(nil)
-                    }
-                    window.close()
-                }
-                let hasOtherVisible = NSApp.windows.contains(where: { $0.isVisible && ($0.identifier?.rawValue == "onboarding" || $0.identifier?.rawValue == "search" || $0.identifier?.rawValue == "update") })
-                if !hasOtherVisible {
-                    NSApp.setActivationPolicy(.accessory)
-                }
+                FullscreenWindowController.shared.close()
             }
         }
     }

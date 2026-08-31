@@ -131,9 +131,9 @@ struct MenuBarLabelContainerView: View {
             }
             .onChange(of: viewmodel.fullscreen) {
                 if viewmodel.fullscreen {
-                    NSApp.setActivationPolicy(.regular)
-                    NSApp.activate(ignoringOtherApps: true)
-                    openWindow(id: "fullscreen")
+                    FullscreenWindowController.shared.show()
+                } else {
+                    FullscreenWindowController.shared.close()
                 }
             }
             .onChange(of: viewmodel.userDefaultStorage.hasOnboarded) {
@@ -189,38 +189,6 @@ struct SpotifyLyricsInMenubarApp: App {
             MenuBarLabelContainerView(viewmodel: viewmodel)
         }
         .menuBarExtraStyle(.window)
-        Window("Lyric Fever: Fullscreen", id: "fullscreen") {
-            FullscreenView()
-                .preferredColorScheme(.dark)
-                .environment(viewmodel)
-                .onAppear {
-                    NSApp.setActivationPolicy(.regular)
-                    NSApp.activate(ignoringOtherApps: true)
-                    
-                    NSEvent.addLocalMonitorForEvents(matching: .keyDown) { (aEvent) -> NSEvent? in
-                        if aEvent.keyCode == 53 { // if esc pressed
-                            Task { @MainActor in
-                                exitFullscreenAndClose()
-                            }
-                            return nil
-                        }
-                        return aEvent
-                    }
-                }
-                .onDisappear {
-                    viewmodel.fullscreen = false
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                        if !viewmodel.fullscreen {
-                            let hasOtherVisible = NSApp.windows.contains(where: { $0.isVisible && ($0.identifier?.rawValue == "onboarding" || $0.identifier?.rawValue == "search" || $0.identifier?.rawValue == "update") })
-                            if !hasOtherVisible {
-                                NSApp.setActivationPolicy(.accessory)
-                            }
-                        }
-                    }
-                }
-        }
-        .windowStyle(.hiddenTitleBar)
-        .defaultSize(width: NSScreen.mainWidth, height: NSScreen.mainHeight)
         Window("Lyric Fever: Onboarding", id: "onboarding") {
             OnboardingWindow().frame(minWidth: 700, maxWidth: 700, minHeight: 600, maxHeight: 600, alignment: .center)
                 .environment(viewmodel)
