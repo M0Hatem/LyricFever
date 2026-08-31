@@ -193,17 +193,20 @@ struct FullscreenView: View {
             idleCoordinator.userActivityDetected()
             return .handled
         }
+        .onKeyPress(.escape) {
+            exitFullscreenAndClose()
+            return .handled
+        }
+        .onAppear {
+            DispatchQueue.main.async {
+                if let window = NSApp.windows.first(where: { $0.title.contains("Fullscreen") || $0.identifier?.rawValue == "fullscreen" }) ?? NSApp.keyWindow {
+                    enterFullscreenMode(for: window)
+                }
+            }
+        }
         .background(
             FullscreenWindowAccessor { window in
-                window.collectionBehavior = [.fullScreenPrimary, .fullScreenAllowsTiling]
-                window.titleVisibility = .hidden
-                window.titlebarAppearsTransparent = true
-                window.isOpaque = true
-                window.tabbingMode = .disallowed
-                
-                if !window.styleMask.contains(.fullScreen) {
-                    window.toggleFullScreen(nil)
-                }
+                enterFullscreenMode(for: window)
             }
         )
     }
@@ -238,6 +241,7 @@ struct FullscreenView: View {
     @ViewBuilder
     private func lyricsPanel(padding: CGFloat) -> some View {
         let lyricsEmpty = viewmodel.currentlyPlayingLyrics.isEmpty
+
         ZStack {
             #if os(macOS)
             LyricsNSScrollView(
@@ -260,6 +264,16 @@ struct FullscreenView: View {
                     startPoint: .top,
                     endPoint: .bottom
                 )
+            )
+            #else
+            LyricsScrollView(
+                lyrics: viewmodel.currentlyPlayingLyrics,
+                currentIndex: viewmodel.currentlyPlayingLyricsIndex,
+                romanizedLyrics: viewmodel.romanizedLyrics,
+                chineseConversionLyrics: viewmodel.chineseConversionLyrics,
+                translatedLyric: viewmodel.translatedLyric,
+                blurFullscreen: viewmodel.userDefaultStorage.blurFullscreen,
+                padding: padding
             )
             #endif
             
@@ -318,11 +332,68 @@ struct FullscreenView: View {
     }
 }
 
+// MARK: - Fullscreen Window Lifecycle Management
+
+@MainActor
+func enterFullscreenMode(for window: NSWindow) {
+    FullscreenWindowDelegate.shared.managedWindow = window
+    window.delegate = FullscreenWindowDelegate.shared
+    window.collectionBehavior = [.fullScreenPrimary, .fullScreenAllowsTiling]
+    window.titleVisibility = .hidden
+    window.titlebarAppearsTransparent = true
+    window.isOpaque = true
+    window.tabbingMode = .disallowed
+    
+    NSApp.setActivationPolicy(.regular)
+    NSApp.activate(ignoringOtherApps: true)
+    window.makeKeyAndOrderFront(nil)
+    
+    DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+        if !window.styleMask.contains(.fullScreen) {
+            window.toggleFullScreen(nil)
+        }
+    }
+}
+
+@MainActor
+func exitFullscreenAndClose() {
+    ViewModel.shared.fullscreen = false
+    
+    let fullscreenWindows = NSApp.windows.filter {
+        $0.title.contains("Fullscreen") || $0.identifier?.rawValue == "fullscreen" || $0.styleMask.contains(.fullScreen)
+    }
+    
+    if fullscreenWindows.isEmpty {
+        NSApp.setActivationPolicy(.accessory)
+        return
+    }
+    
+    for window in fullscreenWindows {
+        if window.styleMask.contains(.fullScreen) {
+            window.toggleFullScreen(nil)
+        } else {
+            window.orderOut(nil)
+            window.close()
+            let hasOtherRegularWindow = NSApp.windows.contains(where: {
+                $0.isVisible && ($0.identifier?.rawValue == "onboarding" || $0.identifier?.rawValue == "search" || $0.identifier?.rawValue == "update")
+            })
+            if !hasOtherRegularWindow {
+                NSApp.setActivationPolicy(.accessory)
+            }
+        }
+    }
+}
+
 final class FullscreenWindowDelegate: NSObject, NSWindowDelegate {
+    static let shared = FullscreenWindowDelegate()
+    weak var managedWindow: NSWindow?
+
     func windowWillClose(_ notification: Notification) {
         Task { @MainActor in
             ViewModel.shared.fullscreen = false
-            let hasOtherVisible = NSApp.windows.contains(where: { $0.isVisible && ($0.identifier?.rawValue == "onboarding" || $0.identifier?.rawValue == "search" || $0.identifier?.rawValue == "update") })
+            let hasOtherVisible = NSApp.windows.contains(where: {
+                $0.isVisible && $0 != (notification.object as? NSWindow) && ($0.identifier?.rawValue == "onboarding" || $0.identifier?.rawValue == "search" || $0.identifier?.rawValue == "update")
+            })
             if !hasOtherVisible {
                 NSApp.setActivationPolicy(.accessory)
             }
@@ -333,9 +404,12 @@ final class FullscreenWindowDelegate: NSObject, NSWindowDelegate {
         Task { @MainActor in
             ViewModel.shared.fullscreen = false
             if let window = notification.object as? NSWindow {
+                window.orderOut(nil)
                 window.close()
             }
-            let hasOtherVisible = NSApp.windows.contains(where: { $0.isVisible && ($0.identifier?.rawValue == "onboarding" || $0.identifier?.rawValue == "search" || $0.identifier?.rawValue == "update") })
+            let hasOtherVisible = NSApp.windows.contains(where: {
+                $0.isVisible && $0 != (notification.object as? NSWindow) && ($0.identifier?.rawValue == "onboarding" || $0.identifier?.rawValue == "search" || $0.identifier?.rawValue == "update")
+            })
             if !hasOtherVisible {
                 NSApp.setActivationPolicy(.accessory)
             }
@@ -349,7 +423,7 @@ struct FullscreenWindowAccessor: NSViewRepresentable {
     let callback: (NSWindow) -> Void
 
     func makeCoordinator() -> FullscreenWindowDelegate {
-        FullscreenWindowDelegate()
+        FullscreenWindowDelegate.shared
     }
 
     func makeNSView(context: Context) -> NSView {
