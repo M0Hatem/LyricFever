@@ -37,6 +37,7 @@ enum MainSettingsError: Error, Identifiable, CaseIterable {
     }
 }
 
+@MainActor
 struct MainSettingsView: View {
     @Environment(ViewModel.self) var viewModel
     @State var permissionDenied: Bool = false
