@@ -189,7 +189,7 @@
 		8F1100010000000000000011 /* IDToColor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "IDToColor.swift"; sourceTree = "<group>"; };
 		8F1100020000000000000022 /* SongToLocale.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SongToLocale.swift"; sourceTree = "<group>"; };
 		8F1100030000000000000033 /* PersistentIDToSpotify.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "PersistentIDToSpotify.swift"; sourceTree = "<group>"; };
-		8F48E36C317E4B80A746E94E /* contents */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "contents"; sourceTree = "<group>"; };
+		8FA5827367CDF52D82C37BF4 /* Lyrics.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "Lyrics.xcdatamodel"; sourceTree = "<group>"; };
 		8FFAC5D90429136CD72EAF12 /* LyricProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LyricProvider.swift"; sourceTree = "<group>"; };
 		8FC06D49A50FA253EF82FEE0 /* LyricProviderType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LyricProviderType.swift"; sourceTree = "<group>"; };
 		8FF3610D7BE55020FFF4B85C /* SongResult.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SongResult.swift"; sourceTree = "<group>"; };
@@ -499,22 +499,6 @@
 				8F1100030000000000000033 /* PersistentIDToSpotify.swift */,
 			);
 			path = "CoreData";
-			sourceTree = "<group>";
-		};
-		8FF2D4D17B71066E40A2D662 /* Lyrics.xcdatamodeld */ = {
-			isa = PBXGroup;
-			children = (
-				8FA5827367CDF52D82C37BF4 /* Lyrics.xcdatamodel */,
-			);
-			path = "Lyrics.xcdatamodeld";
-			sourceTree = "<group>";
-		};
-		8FA5827367CDF52D82C37BF4 /* Lyrics.xcdatamodel */ = {
-			isa = PBXGroup;
-			children = (
-				8F48E36C317E4B80A746E94E /* contents */,
-			);
-			path = "Lyrics.xcdatamodel";
 			sourceTree = "<group>";
 		};
 		8FC748991EB1378DBE7A7516 /* LyricProvider */ = {
@@ -1437,6 +1421,19 @@
 			productName = SwiftOTP;
 		};
 /* End XCSwiftPackageProductDependency section */
+
+/* Begin XCVersionGroup section */
+		8FF2D4D17B71066E40A2D662 /* Lyrics.xcdatamodeld */ = {
+			isa = XCVersionGroup;
+			children = (
+				8FA5827367CDF52D82C37BF4 /* Lyrics.xcdatamodel */,
+			);
+			currentVersion = 8FA5827367CDF52D82C37BF4 /* Lyrics.xcdatamodel */;
+			path = "Lyrics.xcdatamodeld";
+			sourceTree = "<group>";
+			versionGroupType = wrapper.xcdatamodel;
+		};
+/* End XCVersionGroup section */
 	};
 	rootObject = 8FC8E93D2A704EEB00F69915 /* Project object */;
 }

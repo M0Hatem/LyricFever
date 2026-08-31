@@ -27,12 +27,9 @@ let package = Package(
             dependencies: [],
             path: "Sources/CIMediaRemote",
             publicHeadersPath: "include",
-            cSettings: [
-                .unsafeFlags(["-fobjc-arc"])
-            ],
             linkerSettings: [
-                .unsafeFlags(["-framework", "Foundation"]),
-                .unsafeFlags(["-framework", "AppKit"])
+                .linkedFramework("Foundation"),
+                .linkedFramework("AppKit")
             ]
         )
     ]

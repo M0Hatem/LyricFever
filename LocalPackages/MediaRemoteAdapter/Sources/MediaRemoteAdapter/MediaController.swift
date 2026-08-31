@@ -40,6 +40,15 @@ public class MediaController {
         return path
     }
 
+    private var processEnvironment: [String: String] {
+        var env = ProcessInfo.processInfo.environment
+        if let fwPath = Bundle.main.privateFrameworksPath {
+            env["DYLD_FALLBACK_FRAMEWORK_PATH"] = fwPath
+            env["DYLD_FRAMEWORK_PATH"] = fwPath
+        }
+        return env
+    }
+
     @discardableResult
     private func runPerlCommand(arguments: [String]) -> (output: String?, error: String?, terminationStatus: Int32) {
         guard let scriptPath = perlScriptPath else {
@@ -51,6 +60,7 @@ public class MediaController {
 
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/perl")
+        process.environment = processEnvironment
         process.arguments = [scriptPath, libraryPath] + arguments
 
         let outputPipe = Pipe()
@@ -112,6 +122,7 @@ public class MediaController {
 
         let getProcess = Process()
         getProcess.executableURL = URL(fileURLWithPath: "/usr/bin/perl")
+        getProcess.environment = processEnvironment
 
         var getDataBuffer = Data()
         var getDataBufferSearchStart = 0
@@ -189,6 +200,7 @@ public class MediaController {
 
         listeningProcess = Process()
         listeningProcess?.executableURL = URL(fileURLWithPath: "/usr/bin/perl")
+        listeningProcess?.environment = processEnvironment
 
         listeningProcess?.arguments = [scriptPath, libraryPath, "loop"]
 
