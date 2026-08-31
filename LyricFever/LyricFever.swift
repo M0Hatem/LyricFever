@@ -131,8 +131,9 @@ struct MenuBarLabelContainerView: View {
             }
             .onChange(of: viewmodel.fullscreen) {
                 if viewmodel.fullscreen {
+                    NSApp.setActivationPolicy(.regular)
+                    NSApp.activate(ignoringOtherApps: true)
                     openWindow(id: "fullscreen")
-                    NSApplication.shared.activate(ignoringOtherApps: true)
                 }
             }
             .onChange(of: viewmodel.userDefaultStorage.hasOnboarded) {
@@ -193,33 +194,47 @@ struct SpotifyLyricsInMenubarApp: App {
                 .preferredColorScheme(.dark)
                 .environment(viewmodel)
                 .onAppear {
+                    NSApp.setActivationPolicy(.regular)
+                    NSApp.activate(ignoringOtherApps: true)
+                    
                     NSEvent.addLocalMonitorForEvents(matching: .keyDown) { (aEvent) -> NSEvent? in
                         if aEvent.keyCode == 53 { // if esc pressed
                             Task { @MainActor in
                                 let window = NSApp.windows.first { $0.identifier?.rawValue == "fullscreen" }
                                 if window?.styleMask.contains(.fullScreen) == true {
                                     window?.toggleFullScreen(nil)
-                                } else {
-                                    window?.close()
                                 }
+                                window?.close()
                             }
                             return nil
                         }
                         return aEvent
                     }
                     Task { @MainActor in
-                        let window = NSApp.windows.first {$0.identifier?.rawValue == "fullscreen"}
-                        window?.collectionBehavior = .fullScreenPrimary
-                        if window?.styleMask.rawValue != 49167 {
-                            window?.toggleFullScreen(true)
+                        try? await Task.sleep(nanoseconds: 150_000_000)
+                        guard let window = NSApp.windows.first(where: { $0.identifier?.rawValue == "fullscreen" }) else { return }
+                        window.collectionBehavior = [.fullScreenPrimary, .fullScreenAllowsTiling]
+                        window.titleVisibility = .hidden
+                        window.titlebarAppearsTransparent = true
+                        window.makeKeyAndOrderFront(nil)
+                        if !window.styleMask.contains(.fullScreen) {
+                            window.toggleFullScreen(nil)
                         }
                     }
                 }
                 .onDisappear {
-                    NSApp.setActivationPolicy(.accessory)
                     viewmodel.fullscreen = false
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                        if !viewmodel.fullscreen {
+                            let hasOtherVisible = NSApp.windows.contains(where: { $0.isVisible && ($0.identifier?.rawValue == "onboarding" || $0.identifier?.rawValue == "search" || $0.identifier?.rawValue == "update") })
+                            if !hasOtherVisible {
+                                NSApp.setActivationPolicy(.accessory)
+                            }
+                        }
+                    }
                 }
         }
+        .windowStyle(.hiddenTitleBar)
         .defaultSize(width: NSScreen.mainWidth, height: NSScreen.mainHeight)
         Window("Lyric Fever: Onboarding", id: "onboarding") {
             OnboardingWindow().frame(minWidth: 700, maxWidth: 700, minHeight: 600, maxHeight: 600, alignment: .center)

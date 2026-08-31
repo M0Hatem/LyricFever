@@ -18,6 +18,7 @@
 		8F8D4AF9E920F940FFB0C201 /* MarqueeText.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F909D22CE6875662CB513E9 /* MarqueeText.swift */; };
 		8FD07F8ACE22305E97BA392F /* PreferredLocale.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FB8A40BE8450B9175E87CB7 /* PreferredLocale.swift */; };
 		8F0318017D6E28D187FC70BE /* SpotifyProcessedURL.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FA198B77403A984062C9E50 /* SpotifyProcessedURL.swift */; };
+		8FA5827367CDF52D82C37BFF /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 8F59CE94F2BD91444EFABA8F /* Assets.xcassets */; };
 		8F9911FBCEC8C7BB61805530 /* UserDefaultStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F387CA9F25261A5659F22FC /* UserDefaultStorage.swift */; };
 		8F077892F60D5B22CD749E00 /* CurrentTimeWithStoredDate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FD6E6A6B3EC63A44C06B748 /* CurrentTimeWithStoredDate.swift */; };
 		8FBED7B41ECB23446A29048A /* FetchError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F3EAFAF341F829F69E2F4A1 /* FetchError.swift */; };
@@ -183,6 +184,7 @@
 		8F51F63B76A248B93A17240F /* ParserExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ParserExtensions.swift"; sourceTree = "<group>"; };
 		8F0D60A44B594E702D6658BC /* SongObject.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SongObject.swift"; sourceTree = "<group>"; };
 		8F5C4332F5E1EDAE86E0D9D0 /* SongObjectExtensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "SongObjectExtensions.swift"; sourceTree = "<group>"; };
+		8F59CE94F2BD91444EFABA8F /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Assets.xcassets"; sourceTree = "<group>"; };
 		8FA5827367CDF52D82C37BF4 /* Lyrics.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "Lyrics.xcdatamodel"; sourceTree = "<group>"; };
 		8FFAC5D90429136CD72EAF12 /* LyricProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LyricProvider.swift"; sourceTree = "<group>"; };
 		8FC06D49A50FA253EF82FEE0 /* LyricProviderType.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "LyricProviderType.swift"; sourceTree = "<group>"; };
@@ -341,122 +343,6 @@
 				8F387CA9F25261A5659F22FC /* UserDefaultStorage.swift */,
 			);
 			path = "Support Files";
-			sourceTree = "<group>";
-		};
-		8F59CE94F2BD91444EFABA8F /* Assets.xcassets */ = {
-			isa = PBXGroup;
-			children = (
-				8F9AE8B71234E50EA026E48A /* 30.imageset */,
-				8FD7064DEF88E792636943CA /* 40.imageset */,
-				8F5E41729FE950A4FF25883D /* 50.imageset */,
-				8FEF72B09F2F4BFC3B26E06E /* 60.imageset */,
-				8FBCAB5D0410E725D6D01899 /* AccentColor.colorset */,
-				8F7B537D60F318FA33158E75 /* AppIcon.appiconset */,
-				8F6FED5C6E68B31FB3742D8E /* checkAgain.imageset */,
-				8F336F7D6DDE7024259F5122 /* hi.imageset */,
-				8FEFFE0898C12F8FBF9B773C /* music.imageset */,
-				8F325D58D4F1ECF34E9463B5 /* spotify.imageset */,
-				8FCA2F079CE4668DE25B400E /* Contents.json */,
-			);
-			path = "Assets.xcassets";
-			sourceTree = "<group>";
-		};
-		8FEFFE0898C12F8FBF9B773C /* music.imageset */ = {
-			isa = PBXGroup;
-			children = (
-				8F4C2D6E54C1F6C13F29A9EE /* Contents.json */,
-				8F964A57D6DCB3AC56878544 /* Untitled.png */,
-			);
-			path = "music.imageset";
-			sourceTree = "<group>";
-		};
-		8F6FED5C6E68B31FB3742D8E /* checkAgain.imageset */ = {
-			isa = PBXGroup;
-			children = (
-				8FF8DF1C7661F3AC55D2B5DC /* Contents.json */,
-				8F5719C81AD63A2CDC850AC9 /* checkAgain.png */,
-			);
-			path = "checkAgain.imageset";
-			sourceTree = "<group>";
-		};
-		8F325D58D4F1ECF34E9463B5 /* spotify.imageset */ = {
-			isa = PBXGroup;
-			children = (
-				8F47739345FAF33BFA81160E /* Contents.json */,
-				8F8FE029C97974A5220FB603 /* spotify.png */,
-			);
-			path = "spotify.imageset";
-			sourceTree = "<group>";
-		};
-		8FEF72B09F2F4BFC3B26E06E /* 60.imageset */ = {
-			isa = PBXGroup;
-			children = (
-				8F33CA2505FDBEAE7FAE201E /* 60.png */,
-				8FCD0ACB8A86FC599098A5E4 /* Contents.json */,
-			);
-			path = "60.imageset";
-			sourceTree = "<group>";
-		};
-		8F7B537D60F318FA33158E75 /* AppIcon.appiconset */ = {
-			isa = PBXGroup;
-			children = (
-				8F1D2F00926CD7A2E9746A94 /* Contents.json */,
-				8F66A476B88AF57C76AF8DC7 /* Group 1-4-2.png */,
-				8FDED19E7020188A1C48EEFC /* Icon-1024.png */,
-				8F62C22DF99D923ABF3F4F8A /* Icon-128.png */,
-				8F86CAEBA65833C0F0B04C55 /* Icon-256 1.png */,
-				8F3494074F9B7AA804C4E92C /* Icon-256.png */,
-				8F02E5457A666DA0E5601C74 /* Icon-32 1.png */,
-				8F0BB1CB2E64A8E68D3C8E2C /* Icon-32.png */,
-				8F70B0D07847D5AA190219D5 /* Icon-512 1.png */,
-				8F43BE5922D8DBB95277AADE /* Icon-512.png */,
-				8F7D5678D0DC21C73554C3E9 /* Icon-64.png */,
-			);
-			path = "AppIcon.appiconset";
-			sourceTree = "<group>";
-		};
-		8FBCAB5D0410E725D6D01899 /* AccentColor.colorset */ = {
-			isa = PBXGroup;
-			children = (
-				8F90436F88D5D6C5CAD7E3B4 /* Contents.json */,
-			);
-			path = "AccentColor.colorset";
-			sourceTree = "<group>";
-		};
-		8F9AE8B71234E50EA026E48A /* 30.imageset */ = {
-			isa = PBXGroup;
-			children = (
-				8FE0B9D04C07011057664953 /* 30.png */,
-				8F426BDE79DC4BD0EF6F43DF /* Contents.json */,
-			);
-			path = "30.imageset";
-			sourceTree = "<group>";
-		};
-		8F336F7D6DDE7024259F5122 /* hi.imageset */ = {
-			isa = PBXGroup;
-			children = (
-				8FDB6DE4BC51BAA6FA5534E7 /* Contents.json */,
-				8FBF365561DB4DC04BA021F4 /* Frame 1-12 1.png */,
-			);
-			path = "hi.imageset";
-			sourceTree = "<group>";
-		};
-		8F5E41729FE950A4FF25883D /* 50.imageset */ = {
-			isa = PBXGroup;
-			children = (
-				8FA0FA82AEB7B42BCCE0F15F /* 50.png */,
-				8F9FE1B6BF2A3ACCC46F424D /* Contents.json */,
-			);
-			path = "50.imageset";
-			sourceTree = "<group>";
-		};
-		8FD7064DEF88E792636943CA /* 40.imageset */ = {
-			isa = PBXGroup;
-			children = (
-				8FDEE37E16505D4397C6FD56 /* 40.png */,
-				8F7AE61735BC5D2051A2F0EE /* Contents.json */,
-			);
-			path = "40.imageset";
 			sourceTree = "<group>";
 		};
 		8F02A9A65BD35A7CB82C9ACE /* Models */ = {
@@ -871,6 +757,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				8FA5827367CDF52D82C37BFF /* Assets.xcassets in Resources */,
 				8FA436AE2BC49D480072016C /* newPermissionMac.gif in Resources */,
 				8FFA9F382AA1B63500BAEC5C /* crossfade.gif in Resources */,
 				8FCFD1C32AE35DEA00B22023 /* spotifylogin.gif in Resources */,
