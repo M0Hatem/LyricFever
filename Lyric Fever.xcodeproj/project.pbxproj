@@ -1326,8 +1326,8 @@
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/davidsteppenbeck/ObservableUserDefault.git";
 			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 1.3.1;
+				kind = exactVersion;
+				version = 1.3.0;
 			};
 		};
 		8FA4E9762CE73DB900CEEF35 /* XCRemoteSwiftPackageReference "ColorKit-macOS" */ = {
