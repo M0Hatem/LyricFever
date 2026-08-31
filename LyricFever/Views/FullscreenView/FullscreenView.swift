@@ -193,6 +193,19 @@ struct FullscreenView: View {
             idleCoordinator.userActivityDetected()
             return .handled
         }
+        .background(
+            FullscreenWindowAccessor { window in
+                window.collectionBehavior = [.fullScreenPrimary, .fullScreenAllowsTiling]
+                window.titleVisibility = .hidden
+                window.titlebarAppearsTransparent = true
+                window.isOpaque = true
+                window.tabbingMode = .disallowed
+                
+                if !window.styleMask.contains(.fullScreen) {
+                    window.toggleFullScreen(nil)
+                }
+            }
+        )
     }
 
     // MARK: - Subviews
@@ -302,5 +315,27 @@ struct FullscreenView: View {
         }
         let modifiedColor = NSColor(hue: hue, saturation: saturation, brightness: brightness, alpha: alpha)
         return Color(modifiedColor)
+    }
+}
+
+struct FullscreenWindowAccessor: NSViewRepresentable {
+    let callback: (NSWindow) -> Void
+
+    func makeNSView(context: Context) -> NSView {
+        let nsView = NSView()
+        DispatchQueue.main.async {
+            if let window = nsView.window {
+                callback(window)
+            }
+        }
+        return nsView
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {
+        DispatchQueue.main.async {
+            if let window = nsView.window {
+                callback(window)
+            }
+        }
     }
 }

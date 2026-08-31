@@ -17,18 +17,17 @@ struct MenubarLabelView: View {
             return String(localized: "⚠️ Please Update (Click Check Updates)")
         } else if viewmodel.userDefaultStorage.hasOnboarded {
             // Try to work through lyric logic if onboarded
-            // NEW: Revert to song name if fullscreen / karaoke activated
-            if !viewmodel.fullscreen, !viewmodel.userDefaultStorage.karaoke, viewmodel.isPlaying, viewmodel.showLyrics, let currentlyPlayingLyricsIndex = viewmodel.currentlyPlayingLyricsIndex {
+            if !viewmodel.userDefaultStorage.karaoke, viewmodel.showLyrics, let currentlyPlayingLyricsIndex = viewmodel.currentlyPlayingLyricsIndex, currentlyPlayingLyricsIndex < viewmodel.currentlyPlayingLyrics.count {
                 // Attempt to display translations
                 // Implicit assumption: translatedLyric.count == currentlyPlayingLyrics.count
-                if viewmodel.translationExists {
+                if viewmodel.translationExists, currentlyPlayingLyricsIndex < viewmodel.translatedLyric.count {
                     // I don't localize, because I deliver the lyric verbatim
                     return viewmodel.translatedLyric[currentlyPlayingLyricsIndex]
                 } else {
                     // Attempt to display Romanization
-                    if !viewmodel.romanizedLyrics.isEmpty {
+                    if !viewmodel.romanizedLyrics.isEmpty, currentlyPlayingLyricsIndex < viewmodel.romanizedLyrics.count {
                         return viewmodel.romanizedLyrics[currentlyPlayingLyricsIndex]
-                    } else if !viewmodel.chineseConversionLyrics.isEmpty {
+                    } else if !viewmodel.chineseConversionLyrics.isEmpty, currentlyPlayingLyricsIndex < viewmodel.chineseConversionLyrics.count {
                         return viewmodel.chineseConversionLyrics[currentlyPlayingLyricsIndex]
                     } else {
                         return viewmodel.currentlyPlayingLyrics[currentlyPlayingLyricsIndex].words
