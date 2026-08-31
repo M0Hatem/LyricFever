@@ -95,6 +95,13 @@ class SpotifyPlayer: @MainActor Player {
     func forward() {
         spotifyScript?.nextTrack?()
     }
+    func seek(to seconds: Double) {
+        spotifyScript?.setPlayerPosition?(seconds)
+    }
+    
+    var supportsQueue: Bool {
+        return true
+    }
     
     var artworkImage: NSImage? {
         get async {

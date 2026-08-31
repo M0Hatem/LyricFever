@@ -34,6 +34,10 @@ protocol Player {
     func togglePlayback()
     func rewind()
     func forward()
+    func seek(to seconds: Double)
+    
+    // capabilities
+    var supportsQueue: Bool { get }
     
     // fullscreen album art
     @MainActor
@@ -46,6 +50,12 @@ protocol Player {
 }
 
 extension Player {
+    var supportsQueue: Bool {
+        false
+    }
+    
+    func seek(to seconds: Double) {}
+    
     var durationAsTimeInterval: TimeInterval? {
         if let duration {
             return TimeInterval(duration*1000)

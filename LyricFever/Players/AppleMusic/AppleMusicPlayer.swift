@@ -93,6 +93,13 @@ class AppleMusicPlayer: Player {
     func forward() {
         appleMusicScript?.nextTrack?()
     }
+    func seek(to seconds: Double) {
+        appleMusicScript?.setPlayerPosition?(seconds)
+    }
+    
+    var supportsQueue: Bool {
+        return false
+    }
     
     var artworkImage: NSImage?
     
