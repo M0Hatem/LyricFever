@@ -7,6 +7,7 @@
 
 import SwiftUI
 import LaunchAtLogin
+import CoreData
 #if canImport(Translation)
 import Translation
 #endif
@@ -680,21 +681,11 @@ struct MenubarWindowView: View {
         HStack {
             Image(systemName: "speaker.wave.3", variableValue: Double(viewmodel.currentVolume)/100)
                 .frame(width: 30)
-            if #available(macOS 26.0, *) {
-                Slider(value: volumeBinding, in: 0...100) {
-                    Text("Volume")
-                } ticks: {
-                    
-                }
-                .labelsHidden()
-                .frame(width: 160)
-            } else {
-                Slider(value: volumeBinding, in: 0...100) {
-                    Text("Volume")
-                }
-                .labelsHidden()
-                .frame(width: 160)
+            Slider(value: volumeBinding, in: 0...100) {
+                Text("Volume")
             }
+            .labelsHidden()
+            .frame(width: 160)
             Text("\(viewmodel.currentVolume)")
                 .frame(width: 23)
         }
