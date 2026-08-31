@@ -25,24 +25,18 @@ enum MusicType {
     case appleMusic
 }
 
-@main
-struct LyricFever: App {
-    @State var viewmodel = ViewModel.shared
+@MainActor
+struct MenuBarLabelContainerView: View {
+    @Bindable var viewmodel: ViewModel
     @Environment(\.openWindow) var openWindow
     @Environment(\.openURL) var openURL
-    
-    var body: some Scene {
-        MenuBarExtra {
-            MenubarWindowView()
-                .preferredColorScheme(.dark)
-                .environment(viewmodel)
-        } label: {
-            // Text(Image) Doesn't render propertly in MenubarExtra. Stupid Apple. Must resort to if/else
-            MenubarLabelView()
-                .environment(viewmodel)
+
+    var body: some View {
+        MenubarLabelView()
+            .environment(viewmodel)
             .task(id: viewmodel.currentlyPlaying) {
                 if viewmodel.currentPlayer == .appleMusic {
-                    print("Ignoring currentlyPlaying task because Apple Music album art workaround is active. Apple please fix AppleScript support on Apple Music pleaasee.")
+                    print("Ignoring currentlyPlaying task because Apple Music album art workaround is active.")
                     return
                 }
                 if viewmodel.currentlyPlaying == nil {
@@ -78,7 +72,6 @@ struct LyricFever: App {
                         print("Onboarding Task: ignoring false runtime call, cannot refresh as first fetch")
                         return
                     }
-                    // make refreshLyrics use the same Task<> that fetch(_) uses
                     do {
                         try await viewmodel.refreshLyrics()
                     } catch {
@@ -112,7 +105,6 @@ struct LyricFever: App {
                 viewmodel.saveKaraokeFontOnTermination()
             }
             .onChange(of: viewmodel.translationSourceLanguage) {
-                // don't call reloadTranslationConfigIfTranslating(), that invalidates when config is the same
                 if viewmodel.userDefaultStorage.translate {
 #if canImport(Translation)
                     viewmodel.translationSessionConfig = TranslationSession.Configuration(source: viewmodel.translationSourceLanguage, target: viewmodel.userLocaleLanguage)
@@ -128,11 +120,6 @@ struct LyricFever: App {
             .onChange(of: viewmodel.userDefaultStorage.romanize) {
                 viewmodel.romanizeDidChange()
             }
-//            .onChange(of: viewmodel.userDefaultStorage.romanizeMetadata) {
-//                if viewmodel.userDefaultStorage.romanizeMetadata {
-//                    viewmodel.romanizeMetadata()
-//                }
-//            }
             .onChange(of: viewmodel.userDefaultStorage.translate) {
                 if !viewmodel.reloadTranslationConfigIfTranslating() {
                     viewmodel.translatedLyric = []
@@ -183,6 +170,22 @@ struct LyricFever: App {
                     await viewmodel.onCurrentlyPlayingIDChange()
                 }
             }
+    }
+}
+
+@main
+struct SpotifyLyricsInMenubarApp: App {
+    @State var viewmodel = ViewModel.shared
+    @Environment(\.openWindow) var openWindow
+    @Environment(\.openURL) var openURL
+    
+    var body: some Scene {
+        MenuBarExtra {
+            MenubarWindowView()
+                .preferredColorScheme(.dark)
+                .environment(viewmodel)
+        } label: {
+            MenuBarLabelContainerView(viewmodel: viewmodel)
         }
         .menuBarExtraStyle(.window)
         Window("Lyric Fever: Fullscreen", id: "fullscreen") {
@@ -219,7 +222,7 @@ struct LyricFever: App {
                 }
         }
         .defaultSize(width: NSScreen.mainWidth, height: NSScreen.mainHeight)
-        Window("Lyric Fever: Onboarding", id: "onboarding") { // << here !!
+        Window("Lyric Fever: Onboarding", id: "onboarding") {
             OnboardingWindow().frame(minWidth: 700, maxWidth: 700, minHeight: 600, maxHeight: 600, alignment: .center)
                 .environment(viewmodel)
                 .preferredColorScheme(.dark)
@@ -249,7 +252,7 @@ struct LyricFever: App {
                 }
         }
         .windowResizability(.contentSize)
-        Window("Lyric Fever: Update 2.3", id: "update") { // << here !!
+        Window("Lyric Fever: Update 2.3", id: "update") {
             UpdateWindow().frame(minWidth: 700, maxWidth: 700, alignment: .center)
                 .environment(viewmodel)
                 .preferredColorScheme(.dark)
@@ -262,19 +265,17 @@ struct LyricFever: App {
                     }
                 }
         }
-            .windowResizability(.contentSize)
-            .windowStyle(.hiddenTitleBar)
-            .windowLevel(.floating)
+        .windowResizability(.contentSize)
+        .windowStyle(.hiddenTitleBar)
+        .windowLevel(.floating)
     }
 }
 
 
 extension String {
-  // https://gist.github.com/budidino/8585eecd55fd4284afaaef762450f98e
     @MainActor
     func trunc(length: Int? = nil, trailing: String = "…") -> String {
         let length = length ?? ViewModel.shared.userDefaultStorage.truncationLength
         return (self.count > length) ? self.prefix(length) + trailing : self
     }
 }
-
