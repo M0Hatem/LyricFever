@@ -27,6 +27,8 @@ class UserDefaultStorage {
     @ObservationIgnored var blurFullscreen: Bool
     @ObservableUserDefault(.init(key: "animateOnStartupFullscreen", defaultValue: true, store: .standard))
     @ObservationIgnored var animateOnStartupFullscreen: Bool
+    @ObservableUserDefault(.init(key: "fullscreenBackgroundStyle", defaultValue: "Fluid Artwork", store: .standard))
+    @ObservationIgnored var fullscreenBackgroundStyle: String
     @ObservableUserDefault(.init(key: "romanize", defaultValue: false, store: .standard))
     @ObservationIgnored var romanize: Bool
     @ObservableUserDefault(.init(key: "romanizeMetadata", defaultValue: true, store: .standard))

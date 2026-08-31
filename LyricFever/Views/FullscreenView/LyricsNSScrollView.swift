@@ -49,6 +49,8 @@ class LyricCellView: NSView {
     // whose constant changes would propagate to SwiftUI's hosting view and loop.
     let primaryLabel     = NSTextField(labelWithString: "")
     let translationLabel = NSTextField(labelWithString: "")
+    
+    var onLineClick: (() -> Void)?
 
     private var lastIsCurrentLine: Bool = false
     private var lastBlurRadius:    CGFloat = 0.0
@@ -68,7 +70,6 @@ class LyricCellView: NSView {
             label.maximumNumberOfLines = 0
             label.lineBreakMode  = .byWordWrapping
             label.usesSingleLineMode = false
-            // Do NOT set translatesAutoresizingMaskIntoConstraints = false
             addSubview(label)
         }
         primaryLabel.font     = primaryFont
@@ -76,6 +77,15 @@ class LyricCellView: NSView {
         translationLabel.alphaValue = 0.85
     }
     required init?(coder: NSCoder) { fatalError() }
+
+    override func mouseDown(with event: NSEvent) {
+        onLineClick?()
+    }
+
+    override func resetCursorRects() {
+        super.resetCursorRects()
+        addCursorRect(bounds, cursor: .pointingHand)
+    }
 
     override func resizeSubviews(withOldSize _: NSSize) {
         layoutLabels()
@@ -453,6 +463,13 @@ struct LyricsNSScrollView: NSViewRepresentable {
             let isPastLine = currentIndex.map { i < $0 } ?? false
             let distance   = currentIndex.map { abs(i - $0) } ?? 0
             let animDelay  = isPastLine ? 0 : min(Double(distance) * 0.05, 0.3)
+
+            let seekSeconds = element.startTimeMS / 1000.0
+            view.onLineClick = {
+                Task { @MainActor in
+                    ViewModel.shared.currentPlayerInstance.seek(to: seekSeconds)
+                }
+            }
 
             view.configure(
                 primaryText:     primary,

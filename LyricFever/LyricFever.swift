@@ -185,13 +185,20 @@ struct LyricFever: App {
                 .preferredColorScheme(.dark)
                 .environment(viewmodel)
                 .onAppear {
-                    // Block "Esc" button
                     NSEvent.addLocalMonitorForEvents(matching: .keyDown) { (aEvent) -> NSEvent? in
-                            if aEvent.keyCode == 53 { // if esc pressed
-                                return nil
+                        if aEvent.keyCode == 53 { // if esc pressed
+                            Task { @MainActor in
+                                let window = NSApp.windows.first { $0.identifier?.rawValue == "fullscreen" }
+                                if window?.styleMask.contains(.fullScreen) == true {
+                                    window?.toggleFullScreen(nil)
+                                } else {
+                                    window?.close()
+                                }
                             }
-                            return aEvent
+                            return nil
                         }
+                        return aEvent
+                    }
                     Task { @MainActor in
                         let window = NSApp.windows.first {$0.identifier?.rawValue == "fullscreen"}
                         window?.collectionBehavior = .fullScreenPrimary

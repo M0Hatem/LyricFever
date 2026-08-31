@@ -14,287 +14,270 @@ import TipKit
 struct FullscreenView: View {
     @Environment(ViewModel.self) var viewmodel
 
-    // View
-    @State var gradient = [Color(red: 33/255, green: 69/255, blue: 152/255),Color(red: 218/255, green: 62/255, blue: 136/255)]
-
-    // Fullscreen options
-    @State var animate = true
-
-    // Button State
-    @State var currentHover = HoverOptions.none
+    @State private var idleCoordinator = FullscreenIdleCoordinator()
+    @State private var showShortcutsHUD = false
+    @State private var showSettingsPopover = false
+    
+    // Background gradient colors fallback
+    @State var gradient = [Color(red: 33/255, green: 69/255, blue: 152/255), Color(red: 218/255, green: 62/255, blue: 136/255)]
     @State var timer = Timer
-            .publish(every: BackgroundView.animationDuration, on: .main, in: .common)
-            .autoconnect()
+        .publish(every: BackgroundView.animationDuration, on: .main, in: .common)
+        .autoconnect()
     @State var points: ColorSpots = .init()
-    @State var showSettingsPopover = false
 
-    enum HoverOptions {
-        case playpause
-        case showlyrics
-        case pauseanimation
-        case volumelow
-        case volumehigh
-        case translate
-        case none
-        case settings
-        case sharing
+    private var isDocked: Bool {
+        viewmodel.fullscreenPanelState != .none
+    }
+
+    var body: some View {
+        GeometryReader { geo in
+            let windowWidth = geo.size.width
+            let windowHeight = geo.size.height
+            let isLandscape = windowWidth > windowHeight
+            
+            ZStack {
+                // Ambient background
+                BackgroundView(
+                    style: FullscreenBackgroundStyle(rawValue: viewmodel.userDefaultStorage.fullscreenBackgroundStyle) ?? .fluidArtwork,
+                    artworkImage: viewmodel.artworkImage,
+                    isPlaying: viewmodel.isPlaying,
+                    colors: $gradient,
+                    timer: $timer,
+                    points: $points
+                )
+                .ignoresSafeArea()
+
+                // Main Content Layout
+                HStack(spacing: 0) {
+                    // Left Column (Artwork + Timeline + Controls or Centered in State A)
+                    VStack(spacing: 24) {
+                        Spacer(minLength: 20)
+                        
+                        artworkContainer(geo: geo)
+                        
+                        // Idle Song Metadata (Revealed when controls are hidden after 3s)
+                        if idleCoordinator.isIdleMetadataVisible {
+                            VStack(spacing: 6) {
+                                Text(viewmodel.currentlyPlayingName ?? "Not Playing")
+                                    .font(.system(size: isDocked ? 20 : 24, weight: .bold))
+                                    .foregroundStyle(.white)
+                                    .lineLimit(1)
+                                    .truncationMode(.tail)
+                                
+                                Text(viewmodel.currentlyPlayingArtist ?? "")
+                                    .font(.system(size: isDocked ? 15 : 18, weight: .medium))
+                                    .foregroundStyle(.white.opacity(0.7))
+                                    .lineLimit(1)
+                                    .truncationMode(.tail)
+                            }
+                            .frame(maxWidth: isDocked ? windowWidth * 0.38 : min(windowWidth * 0.6, 580))
+                            .transition(.opacity.combined(with: .scale(scale: 0.98)))
+                        }
+
+                        // Controls & Timeline Chrome (Fades out when idle)
+                        if idleCoordinator.isControlsVisible {
+                            VStack(spacing: 16) {
+                                FullscreenTimelineView(idleCoordinator: idleCoordinator)
+                                    .frame(maxWidth: isDocked ? min(windowWidth * 0.38, 480) : min(windowWidth * 0.52, 580))
+
+                                FullscreenControlsView(
+                                    idleCoordinator: idleCoordinator,
+                                    showShortcutsHUD: $showShortcutsHUD
+                                )
+                                .frame(maxWidth: isDocked ? min(windowWidth * 0.38, 480) : min(windowWidth * 0.52, 580))
+                            }
+                            .transition(.opacity)
+                        }
+
+                        Spacer(minLength: 20)
+                    }
+                    .frame(
+                        width: isDocked ? windowWidth * 0.42 : windowWidth,
+                        height: windowHeight
+                    )
+                    
+                    // Right Column (State B: Lyrics or State C: Queue)
+                    if isDocked {
+                        Group {
+                            switch viewmodel.fullscreenPanelState {
+                            case .lyrics:
+                                lyricsPanel(padding: windowHeight * 0.4)
+                            case .queue:
+                                QueueView()
+                            case .none:
+                                EmptyView()
+                            }
+                        }
+                        .frame(width: windowWidth * 0.58, height: windowHeight)
+                        .transition(.asymmetric(
+                            insertion: .opacity.combined(with: .move(edge: .trailing)),
+                            removal: .opacity
+                        ))
+                    }
+                }
+                .animation(.spring(response: 0.42, dampingFraction: 0.82), value: viewmodel.fullscreenPanelState)
+
+                // Shortcuts Overlay HUD
+                if showShortcutsHUD {
+                    FullscreenShortcutsOverlayView(isPresented: $showShortcutsHUD)
+                        .transition(.opacity.combined(with: .scale(scale: 0.96)))
+                }
+            }
+        }
+        .onAppear {
+            idleCoordinator.startMonitoring()
+            // Sync showLyrics with panel state
+            if viewmodel.showLyrics && !viewmodel.currentlyPlayingLyrics.isEmpty {
+                viewmodel.fullscreenPanelState = .lyrics
+            }
+        }
+        .onDisappear {
+            idleCoordinator.stopMonitoring()
+        }
+        .task(id: viewmodel.artworkImage) {
+            if let artworkImage = viewmodel.artworkImage,
+               let dominantColors = try? artworkImage.dominantColors(with: .best, algorithm: .kMeansClustering) {
+                gradient = dominantColors.map { adjustedColor($0) }
+            }
+        }
+        // Keyboard shortcuts
+        .onKeyPress(.space) {
+            viewmodel.currentPlayerInstance.togglePlayback()
+            idleCoordinator.userActivityDetected()
+            return .handled
+        }
+        .onKeyPress(KeyEquivalent("l")) {
+            toggleLyricsPanel()
+            idleCoordinator.userActivityDetected()
+            return .handled
+        }
+        .onKeyPress(KeyEquivalent("h")) {
+            toggleLyricsPanel()
+            idleCoordinator.userActivityDetected()
+            return .handled
+        }
+        .onKeyPress(KeyEquivalent("q")) {
+            toggleQueuePanel()
+            idleCoordinator.userActivityDetected()
+            return .handled
+        }
+        .onKeyPress(KeyEquivalent("?")) {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                showShortcutsHUD.toggle()
+            }
+            idleCoordinator.userActivityDetected()
+            return .handled
+        }
+        .onKeyPress(.leftArrow) {
+            if let cur = viewmodel.currentPlayerInstance.currentTime {
+                viewmodel.currentPlayerInstance.seek(to: max(0, (cur / 1000.0) - 5.0))
+            }
+            idleCoordinator.userActivityDetected()
+            return .handled
+        }
+        .onKeyPress(.rightArrow) {
+            if let cur = viewmodel.currentPlayerInstance.currentTime {
+                viewmodel.currentPlayerInstance.seek(to: (cur / 1000.0) + 5.0)
+            }
+            idleCoordinator.userActivityDetected()
+            return .handled
+        }
+        .onKeyPress(.upArrow) {
+            viewmodel.currentPlayerInstance.increaseVolume()
+            idleCoordinator.userActivityDetected()
+            return .handled
+        }
+        .onKeyPress(.downArrow) {
+            viewmodel.currentPlayerInstance.decreaseVolume()
+            idleCoordinator.userActivityDetected()
+            return .handled
+        }
+    }
+
+    // MARK: - Subviews
+
+    @ViewBuilder
+    private func artworkContainer(geo: GeometryProxy) -> some View {
+        let maxSide = min(geo.size.width, geo.size.height)
+        let targetDimension: CGFloat = isDocked ? min(maxSide * 0.55, 460) : min(maxSide * 0.65, 580)
+        let cornerRadius: CGFloat = isDocked ? 12 : 16
+
+        Group {
+            if let artwork = viewmodel.artworkImage {
+                Image(nsImage: artwork)
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+            } else {
+                ZStack {
+                    Color.white.opacity(0.1)
+                    Image(systemName: "music.note")
+                        .font(.system(size: targetDimension * 0.3))
+                        .foregroundStyle(.white.opacity(0.6))
+                }
+            }
+        }
+        .frame(width: targetDimension, height: targetDimension)
+        .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+        .shadow(color: Color.black.opacity(0.35), radius: isDocked ? 18 : 26, x: 0, y: isDocked ? 8 : 12)
     }
 
     @ViewBuilder
-    func fullscreenButton(systemName: String, hoverType: HoverOptions, keyEquivalent: KeyEquivalent, action: @escaping () -> Void) -> some View {
-        Button {
-            action()
-        } label: {
-            HoverableIcon(systemName: systemName)
-        }
-        .buttonStyle(FullscreenButtonIconStyle())
-        #if os(macOS)
-        .onHover { hover in currentHover = hover ? hoverType : .none }
-        .keyboardShortcut(keyEquivalent, modifiers: [])
-        #endif
-    }
-
-    @ViewBuilder func FullscreenButtons() -> some View {
-        #if os(macOS)
-        let highlightTip = NewSettings()
-        #endif
-        HStack(alignment: .center, spacing: 6) {
-            fullscreenButton(systemName: "speaker.minus", hoverType: .volumelow, keyEquivalent: .downArrow) {
-                viewmodel.currentPlayerInstance.decreaseVolume()
-            }
-//            .glassEffect()
-            fullscreenButton(systemName: viewmodel.isPlaying ? "pause" : "play", hoverType: .playpause, keyEquivalent: " ") {
-                viewmodel.currentPlayerInstance.togglePlayback()
-            }
-//            .glassEffect()
-            fullscreenButton(systemName: "speaker.plus", hoverType: .volumehigh, keyEquivalent: .upArrow) {
-                viewmodel.currentPlayerInstance.increaseVolume()
-            }
-//            .glassEffect()
-        }
-        .font(.system(size: 15))
-        HStack(alignment: .center, spacing: 5) {
-            Button {
-                viewmodel.showLyrics.toggle()
-            } label: {
-                HoverableIcon(systemName: "music.note.list", sideLength: 28, disabled: !viewmodel.showLyrics)
-
-            }
-            .buttonStyle(FullscreenButtonIconStyle())
-            #if os(macOS)
-            .onHover { hover in
-                currentHover = hover ? .showlyrics : .none
-            }
-            .keyboardShortcut("h")
-            #endif
-            .disabled(viewmodel.currentlyPlayingLyrics.isEmpty)
-
-            Button {
-                viewmodel.userDefaultStorage.translate.toggle()
-            } label: {
-                HoverableIcon(systemName: "translate", sideLength: 28, disabled: !viewmodel.userDefaultStorage.translate)
-            }
-            .buttonStyle(FullscreenButtonIconStyle())
-            #if os(macOS)
-            .onHover { hover in
-                currentHover = hover ? .translate : .none
-            }
-            .keyboardShortcut("t")
-            #endif
-            .disabled(viewmodel.currentlyPlayingLyrics.isEmpty)
-
-
-
-            Button {
-                animate.toggle()
-            } label: {
-                HoverableIcon(systemName: "leaf", sideLength: 28, disabled: !animate)
-            }
-            .buttonStyle(FullscreenButtonIconStyle())
-            #if os(macOS)
-            .onHover { hover in
-                currentHover = hover ? .pauseanimation : .none
-            }
-            .keyboardShortcut("a")
-            #endif
-
-            #if os(macOS)
-            Button {
-                highlightTip.invalidate(reason: .actionPerformed)
-                showSettingsPopover = true
-            } label: {
-                HoverableIcon(systemName: "gear", sideLength: 28)
-            }
-            .buttonStyle(FullscreenButtonIconStyle())
-            .popoverTip(highlightTip, arrowEdge: .bottom)
-            .onHover { hover in
-                currentHover = hover ? .settings : .none
-            }
-            .popover(isPresented: $showSettingsPopover) {
-                @Bindable var viewmodel = viewmodel
-                VStack(spacing: 7) {
-                    Toggle("Blur surrounding lyrics", isOn: $viewmodel.userDefaultStorage.blurFullscreen)
-                    Toggle("Animate on startup", isOn: $viewmodel.userDefaultStorage.animateOnStartupFullscreen)
-                    Button("Reset to default") {
-
-                    }
-                }
-                .padding(10)
-            }
-            #endif
-            #if os(macOS)
-            if let shareURL = viewmodel.currentPlayerInstance.shareURL(for: viewmodel.currentlyPlaying) {
-                ShareLink(item: shareURL) {
-                    HoverableIcon(systemName: "square.and.arrow.up.circle.fill", sideLength: 30)
-                }
-                .imageScale(.large)
-                .buttonStyle(FullscreenButtonIconStyle())
-                .onHover { hover in
-                    currentHover = hover ? .sharing : .none
-                }
-            }
-            #endif
-        }
-        .font(.system(size: 12))
-    }
-
-    @ViewBuilder var albumArt: some View {
-        VStack {
-            Spacer()
-            if let artworkImage = viewmodel.artworkImage {
-                #if os(macOS)
-                Image(nsImage: artworkImage)
-                    .resizable()
-                    .clipShape(.rect(cornerRadii: .init(topLeading: 10, bottomLeading: 10, bottomTrailing: 10, topTrailing: 10)))
-                    .shadow(radius: 5)
-                    .frame(width: viewmodel.canDisplayLyrics ? 550 : 700, height: viewmodel.canDisplayLyrics ? 550 : 700)
-                #else
-                Image(uiImage: artworkImage)
-                    .resizable()
-                    .clipShape(.rect(cornerRadii: .init(topLeading: 10, bottomLeading: 10, bottomTrailing: 10, topTrailing: 10)))
-                    .shadow(radius: 5)
-                    .frame(width: canDisplayLyrics ? 550 : 700, height: canDisplayLyrics ? 550 : 700)
-                #endif
-            }
-            else {
-                Image(systemName: "music.note.list")
-                    .resizable()
-                    .shadow(radius: 3)
-                    .scaleEffect(0.5)
-                    .background(.gray)
-                    .clipShape(.rect(cornerRadii: .init(topLeading: 10, bottomLeading: 10, bottomTrailing: 10, topTrailing: 10)))
-                    .shadow(radius: 5)
-                    .frame(width: viewmodel.canDisplayLyrics ? 550 : 650, height: viewmodel.canDisplayLyrics ? 550 : 650)
-            }
-            Group {
-                Text(verbatim: viewmodel.currentlyPlayingName ?? "")
-                    .font(.title)
-                    .bold()
-                    .padding(.top, 30)
-                Text(verbatim: viewmodel.currentlyPlayingArtist ?? "")
-                    .font(.title2)
-            }
-            .frame(height: 35)
-            FullscreenButtons()
-            .frame(height: 25)
-            .buttonStyle(.plain)
-            .imageScale(.large)
-            .bold()
-            Text(displayHoverTooltip())
-                .textCase(.uppercase)
-                .font(.system(size: 14, weight: .light, design: .monospaced))
-                .frame(height: 20)
-            Spacer()
-        }
-    }
-
-    func displayHoverTooltip() -> LocalizedStringKey {
-        switch currentHover {
-            case .playpause:
-                viewmodel.isPlaying ? "Pause (spacebar)" : "Play (spacebar)"
-            case .showlyrics:
-                viewmodel.showLyrics ? "Hide lyrics (⌘ + H)" : "Show lyrics (⌘ + H)"
-            case .pauseanimation:
-                animate ? "Pause animations (saves battery) (⌘ + A)" : "Unpause animations (uses battery) (⌘ + A)"
-            case .volumelow:
-                "Decrease volume by 5 (Down Arrow)"
-            case .volumehigh:
-                "Increase volume by 5 (Up Arrow)"
-            case .none:
-                ""
-            case .translate:
-                viewmodel.userDefaultStorage.translate ? "Hide translations (⌘ + T)" : "Translate lyrics (⌘ + T)"
-            case .settings:
-                "Display fullscreen options"
-            case .sharing:
-                "Share Spotify link"
-        }
-    }
-
-    @ViewBuilder func lyrics(padding: CGFloat) -> some View {
+    private func lyricsPanel(padding: CGFloat) -> some View {
         let lyricsEmpty = viewmodel.currentlyPlayingLyrics.isEmpty
         ZStack {
-            // Scroll view is always fully opaque so it can pre-position silently
-            // while the ProgressView is covering it.
             #if os(macOS)
             LyricsNSScrollView(
-                lyrics:                  viewmodel.currentlyPlayingLyrics,
-                currentIndex:            viewmodel.currentlyPlayingLyricsIndex,
-                romanizedLyrics:         viewmodel.romanizedLyrics,
+                lyrics: viewmodel.currentlyPlayingLyrics,
+                currentIndex: viewmodel.currentlyPlayingLyricsIndex,
+                romanizedLyrics: viewmodel.romanizedLyrics,
                 chineseConversionLyrics: viewmodel.chineseConversionLyrics,
-                translatedLyric:         viewmodel.translatedLyric,
-                blurFullscreen:          viewmodel.userDefaultStorage.blurFullscreen,
-                padding:                 padding
+                translatedLyric: viewmodel.translatedLyric,
+                blurFullscreen: viewmodel.userDefaultStorage.blurFullscreen,
+                padding: padding
             )
             .mask(
                 LinearGradient(
-                    gradient: Gradient(colors: [.clear, .black, .clear]),
+                    stops: [
+                        .init(color: .clear, location: 0.0),
+                        .init(color: .black, location: 0.12),
+                        .init(color: .black, location: 0.88),
+                        .init(color: .clear, location: 1.0)
+                    ],
                     startPoint: .top,
                     endPoint: .bottom
                 )
             )
             #endif
-            // ProgressView sits on top and fades out once lyrics are ready,
-            // revealing the already-positioned scroll view underneath.
+            
             if lyricsEmpty {
                 ProgressView()
+                    .controlSize(.large)
                     .transition(.opacity)
             }
         }
-        .animation(.easeOut(duration: 0.6), value: lyricsEmpty)
+        .animation(.easeOut(duration: 0.4), value: lyricsEmpty)
     }
 
-    var body: some View {
-        GeometryReader { geo in
-            HStack {
-                albumArt
-                    .frame(minWidth: 0.50*(geo.size.width), maxWidth: viewmodel.canDisplayLyrics ? 0.50*(geo.size.width) : .infinity)
-                if viewmodel.canDisplayLyrics {
-                    lyrics(padding: 0.5*(geo.size.height))
-                        .frame(minWidth: 0.50*(geo.size.width), maxWidth: 0.50*(geo.size.width))
-                        .transition(.opacity)
-                }
-            }
-            .animation(.easeInOut(duration: 0.25), value: viewmodel.canDisplayLyrics)
-        }
-        .background {
-            BackgroundView(colors: $gradient, timer: $timer, points: $points)
-        }
-        .onAppear {
-            if !viewmodel.userDefaultStorage.animateOnStartupFullscreen {
-                animate = false
-            }
-            do {
-                try Tips.configure()
-            }
-            catch {
-                print("Error configuring tips: \(error)")
+    private func toggleLyricsPanel() {
+        guard !viewmodel.currentlyPlayingLyrics.isEmpty else { return }
+        withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
+            if viewmodel.fullscreenPanelState == .lyrics {
+                viewmodel.fullscreenPanelState = .none
+                viewmodel.showLyrics = false
+            } else {
+                viewmodel.fullscreenPanelState = .lyrics
+                viewmodel.showLyrics = true
             }
         }
-        .task(id: viewmodel.artworkImage) {
-            print("NEW ARTWORK")
-            if let artworkImage = viewmodel.artworkImage, let dominantColors = try? artworkImage.dominantColors(with: .best, algorithm: .kMeansClustering) {
-                gradient = dominantColors.map({adjustedColor($0)})
+    }
+
+    private func toggleQueuePanel() {
+        guard viewmodel.currentPlayerInstance.supportsQueue else { return }
+        withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
+            if viewmodel.fullscreenPanelState == .queue {
+                viewmodel.fullscreenPanelState = .none
+            } else {
+                viewmodel.fullscreenPanelState = .queue
             }
         }
     }
@@ -305,7 +288,7 @@ struct FullscreenView: View {
     typealias PlatformColor = UIColor
     #endif
 
-    func adjustedColor(_ color: PlatformColor) -> Color {
+    private func adjustedColor(_ color: PlatformColor) -> Color {
         var hue: CGFloat = 0
         var saturation: CGFloat = 0
         var brightness: CGFloat = 0
@@ -316,12 +299,7 @@ struct FullscreenView: View {
         if saturation < 0.9 {
             saturation = max(0.1, saturation * 3)
         }
-    #if os(macOS)
         let modifiedColor = NSColor(hue: hue, saturation: saturation, brightness: brightness, alpha: alpha)
         return Color(modifiedColor)
-    #else
-        let modifiedColor = UIColor(hue: hue, saturation: saturation, brightness: brightness, alpha: alpha)
-        return Color(modifiedColor)
-    #endif
     }
 }
