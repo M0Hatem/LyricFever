@@ -92,3 +92,11 @@ fastlane/test_output
 
 iOSInjectionProject/
 Lyric Fever.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+
+# Artifacts, DMGs, backups & tooling
+*.dmg
+*.bak
+main
+.claude/
+.superpowers/
+
