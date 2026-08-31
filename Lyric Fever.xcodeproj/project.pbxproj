@@ -868,7 +868,7 @@
 				8FFB32DD2E694991007D9981 /* XCRemoteSwiftPackageReference "CompactSlider" */,
 				8F37323B2E6EC9C90075CDA7 /* XCRemoteSwiftPackageReference "SwiftyOpenCC" */,
 				8F1198702E72B9840011A962 /* XCRemoteSwiftPackageReference "KeyboardShortcuts" */,
-				8F2922BE2E94DE0700B286FC /* XCRemoteSwiftPackageReference "mediaremote-adapter" */,
+				8F2922BE2E94DE0700B286FC /* XCLocalSwiftPackageReference "MediaRemoteAdapter" */,
 				8F0E98932EE24713008A50A4 /* XCRemoteSwiftPackageReference "MenuBarExtraAccess" */,
 				8F9B71A02F55F19400214019 /* XCRemoteSwiftPackageReference "ObservableUserDefault" */,
 			);
@@ -1266,13 +1266,9 @@
 				minimumVersion = 2.4.2;
 			};
 		};
-		8F2922BE2E94DE0700B286FC /* XCRemoteSwiftPackageReference "mediaremote-adapter" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/ejbills/mediaremote-adapter";
-			requirement = {
-				branch = master;
-				kind = branch;
-			};
+		8F2922BE2E94DE0700B286FC /* XCLocalSwiftPackageReference "MediaRemoteAdapter" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = LocalPackages/MediaRemoteAdapter;
 		};
 		8F37323B2E6EC9C90075CDA7 /* XCRemoteSwiftPackageReference "SwiftyOpenCC" */ = {
 			isa = XCRemoteSwiftPackageReference;
@@ -1376,7 +1372,7 @@
 		};
 		8F2922BF2E94DE0700B286FC /* MediaRemoteAdapter */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 8F2922BE2E94DE0700B286FC /* XCRemoteSwiftPackageReference "mediaremote-adapter" */;
+			package = 8F2922BE2E94DE0700B286FC /* XCLocalSwiftPackageReference "MediaRemoteAdapter" */;
 			productName = MediaRemoteAdapter;
 		};
 		8F37323C2E6EC9C90075CDA7 /* OpenCC */ = {
