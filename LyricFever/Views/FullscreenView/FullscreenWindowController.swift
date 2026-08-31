@@ -39,13 +39,13 @@ final class FullscreenWindowController: NSObject, NSWindowDelegate {
                     .environment(ViewModel.shared)
             )
             
-            let screenFrame = NSScreen.main?.frame ?? NSRect(x: 0, y: 0, width: 1440, height: 900)
             let win = NSWindow(
-                contentRect: screenFrame,
-                styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullScreen],
+                contentRect: NSRect(x: 0, y: 0, width: 1000, height: 700),
+                styleMask: [.titled, .closable, .miniaturizable, .resizable],
                 backing: .buffered,
                 defer: false
             )
+            win.center()
             win.title = "Lyric Fever: Fullscreen"
             win.titleVisibility = .hidden
             win.titlebarAppearsTransparent = true
@@ -63,9 +63,9 @@ final class FullscreenWindowController: NSObject, NSWindowDelegate {
         ViewModel.shared.fullscreen = true
         
         // 3. Enter native macOS full screen space
-        if !fullscreenWindow.styleMask.contains(.fullScreen) {
-            isTransitioning = true
-            DispatchQueue.main.async {
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+            if !fullscreenWindow.styleMask.contains(.fullScreen) {
+                self.isTransitioning = true
                 fullscreenWindow.toggleFullScreen(nil)
             }
         }
