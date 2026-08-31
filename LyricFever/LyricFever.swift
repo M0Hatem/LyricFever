@@ -6,7 +6,9 @@
 //
 
 import SwiftUI
+#if canImport(Translation)
 import Translation
+#endif
 import LaunchAtLogin
 
 extension NSScreen {
@@ -101,16 +103,20 @@ struct LyricFever: App {
             .onReceive(DistributedNotificationCenter.default().publisher(for: Notification.Name(rawValue:  "com.spotify.client.PlaybackStateChanged"))) { notification in
                 viewmodel.spotifyPlaybackDidChange(notification)
             }
+#if canImport(Translation)
             .translationTask(viewmodel.translationSessionConfig) { session in
                 await viewmodel.translationTask(session)
             }
+#endif
             .onReceive(NotificationCenter.default.publisher(for: NSApplication.willTerminateNotification)) { _ in
                 viewmodel.saveKaraokeFontOnTermination()
             }
             .onChange(of: viewmodel.translationSourceLanguage) {
                 // don't call reloadTranslationConfigIfTranslating(), that invalidates when config is the same
                 if viewmodel.userDefaultStorage.translate {
+#if canImport(Translation)
                     viewmodel.translationSessionConfig = TranslationSession.Configuration(source: viewmodel.translationSourceLanguage, target: viewmodel.userLocaleLanguage)
+#endif
                 }
             }
             .onChange(of: viewmodel.userLocaleLanguage) {

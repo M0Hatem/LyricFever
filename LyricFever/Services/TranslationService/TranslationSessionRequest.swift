@@ -5,6 +5,8 @@
 //  Created by Avi Wadhwa on 2025-08-04.
 //
 
+import Foundation
+#if canImport(Translation)
 import Translation
 
 extension TranslationSession.Request {
@@ -12,3 +14,4 @@ extension TranslationSession.Request {
         self.init(sourceText: lyric.words, clientIdentifier: lyric.id.uuidString)
     }
 }
+#endif

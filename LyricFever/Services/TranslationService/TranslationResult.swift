@@ -5,6 +5,8 @@
 //  Created by Avi Wadhwa on 2025-08-04.
 //
 
+import Foundation
+#if canImport(Translation)
 import Translation
 
 enum TranslationResult {
@@ -12,3 +14,4 @@ enum TranslationResult {
     case needsConfigUpdate(Locale.Language)
     case failure
 }
+#endif

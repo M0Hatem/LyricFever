@@ -5,8 +5,10 @@
 //  Created by Avi Wadhwa on 2025-08-04.
 //
 
-import Translation
+import Foundation
 import NaturalLanguage
+#if canImport(Translation)
+import Translation
 
 class TranslationService {
     static func translationTask(_ session: TranslationSession, request: [TranslationSession.Request]) async -> TranslationResult {
@@ -43,13 +45,16 @@ class TranslationService {
                 }
             }
         }
-        if let lol =  langCount.sorted( by: { $1.value < $0.value}).first {
-            if lol.value >= 3 {
-                print("Found real language: \(lol.key)")
-                return lol.key
-            }
+        let totalCount = langCount.values.reduce(0, +)
+        guard let highest = langCount.max(by: { $0.value < $1.value }) else {
+            return nil
         }
-        print("No real language found")
-        return nil
+        print("Language count:", langCount)
+        if Double(highest.value) / Double(totalCount) > 0.8 {
+            return highest.key
+        } else {
+            return nil
+        }
     }
 }
+#endif

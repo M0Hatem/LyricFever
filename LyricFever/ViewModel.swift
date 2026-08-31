@@ -13,7 +13,9 @@ import SwiftUI
 import MediaPlayer
 #if os(macOS)
 import WebKit
+#if canImport(Translation)
 import Translation
+#endif
 import KeyboardShortcuts
 import MediaRemoteAdapter
 #endif
@@ -119,7 +121,9 @@ import MediaRemoteAdapter
     }
     
     #if os(macOS)
+    #if canImport(Translation)
     var translationSessionConfig: TranslationSession.Configuration?
+    #endif
     #endif
     var userDefaultStorage = UserDefaultStorage()
     
@@ -496,6 +500,7 @@ import MediaRemoteAdapter
     }
     
     @MainActor
+    #if canImport(Translation)
     func translationTask(_ session: TranslationSession) async {
         isFetchingTranslation = true
         let translationResponse = await TranslationService.translationTask(session, request: currentlyPlayingLyrics.map { TranslationSession.Request(lyric: $0) })
@@ -519,6 +524,7 @@ import MediaRemoteAdapter
                 return
         }
     }
+    #endif
     
     func romanizeDidChange() {
         if userDefaultStorage.romanize {
@@ -1010,6 +1016,7 @@ import MediaRemoteAdapter
     
     #if os(macOS)
     func reloadTranslationConfigIfTranslating() -> Bool {
+        #if canImport(Translation)
         if userDefaultStorage.translate {
             if translationSessionConfig == TranslationSession.Configuration(source: translationSourceLanguage, target: userLocaleLanguage) {
                 translationSessionConfig?.invalidate()
@@ -1020,6 +1027,9 @@ import MediaRemoteAdapter
         } else {
             return false
         }
+        #else
+        return false
+        #endif
     }
     #endif
     

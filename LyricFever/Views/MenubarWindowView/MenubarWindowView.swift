@@ -7,7 +7,9 @@
 
 import SwiftUI
 import LaunchAtLogin
+#if canImport(Translation)
 import Translation
+#endif
 
 struct MenubarWindowView: View {
     @Environment(\.openURL) var openURL
@@ -732,12 +734,14 @@ struct MenubarWindowView: View {
             }
         }
         .task {
+#if canImport(Translation)
             let languages = await Task.detached {
                 await LanguageAvailability().supportedLanguages
             }.value
             await MainActor.run {
                 supportedLanguages = languages
             }
+#endif
         }
     }
 }
