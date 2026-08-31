@@ -318,13 +318,46 @@ struct FullscreenView: View {
     }
 }
 
+final class FullscreenWindowDelegate: NSObject, NSWindowDelegate {
+    func windowWillClose(_ notification: Notification) {
+        Task { @MainActor in
+            ViewModel.shared.fullscreen = false
+            let hasOtherVisible = NSApp.windows.contains(where: { $0.isVisible && ($0.identifier?.rawValue == "onboarding" || $0.identifier?.rawValue == "search" || $0.identifier?.rawValue == "update") })
+            if !hasOtherVisible {
+                NSApp.setActivationPolicy(.accessory)
+            }
+        }
+    }
+
+    func windowDidExitFullScreen(_ notification: Notification) {
+        Task { @MainActor in
+            ViewModel.shared.fullscreen = false
+            if let window = notification.object as? NSWindow {
+                window.close()
+            }
+            let hasOtherVisible = NSApp.windows.contains(where: { $0.isVisible && ($0.identifier?.rawValue == "onboarding" || $0.identifier?.rawValue == "search" || $0.identifier?.rawValue == "update") })
+            if !hasOtherVisible {
+                NSApp.setActivationPolicy(.accessory)
+            }
+        }
+    }
+}
+
+private var fullscreenWindowDelegateKey: UInt8 = 0
+
 struct FullscreenWindowAccessor: NSViewRepresentable {
     let callback: (NSWindow) -> Void
+
+    func makeCoordinator() -> FullscreenWindowDelegate {
+        FullscreenWindowDelegate()
+    }
 
     func makeNSView(context: Context) -> NSView {
         let nsView = NSView()
         DispatchQueue.main.async {
             if let window = nsView.window {
+                window.delegate = context.coordinator
+                objc_setAssociatedObject(window, &fullscreenWindowDelegateKey, context.coordinator, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
                 callback(window)
             }
         }
@@ -334,6 +367,8 @@ struct FullscreenWindowAccessor: NSViewRepresentable {
     func updateNSView(_ nsView: NSView, context: Context) {
         DispatchQueue.main.async {
             if let window = nsView.window {
+                window.delegate = context.coordinator
+                objc_setAssociatedObject(window, &fullscreenWindowDelegateKey, context.coordinator, .OBJC_ASSOCIATION_RETAIN_NONATOMIC)
                 callback(window)
             }
         }

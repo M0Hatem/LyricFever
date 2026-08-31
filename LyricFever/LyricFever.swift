@@ -200,11 +200,16 @@ struct SpotifyLyricsInMenubarApp: App {
                     NSEvent.addLocalMonitorForEvents(matching: .keyDown) { (aEvent) -> NSEvent? in
                         if aEvent.keyCode == 53 { // if esc pressed
                             Task { @MainActor in
+                                viewmodel.fullscreen = false
                                 for window in NSApp.windows where window.title.contains("Fullscreen") || window.identifier?.rawValue == "fullscreen" {
                                     if window.styleMask.contains(.fullScreen) {
                                         window.toggleFullScreen(nil)
                                     }
                                     window.close()
+                                }
+                                let hasOtherVisible = NSApp.windows.contains(where: { $0.isVisible && ($0.identifier?.rawValue == "onboarding" || $0.identifier?.rawValue == "search" || $0.identifier?.rawValue == "update") })
+                                if !hasOtherVisible {
+                                    NSApp.setActivationPolicy(.accessory)
                                 }
                             }
                             return nil
