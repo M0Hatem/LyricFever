@@ -24,6 +24,8 @@ import Combine
     private var idleTimer: Timer?
     private var eventMonitor: Any?
     private let idleTimeout: TimeInterval = 3.0
+    private var lastActivityTime: TimeInterval = 0
+    private var lastTimerScheduleTime: TimeInterval = 0
     
     init() {}
     
@@ -54,6 +56,9 @@ import Combine
     }
     
     func userActivityDetected() {
+        let now = ProcessInfo.processInfo.systemUptime
+        lastActivityTime = now
+        
         if !isControlsVisible {
             withAnimation(.easeOut(duration: 0.25)) {
                 isControlsVisible = true
@@ -61,15 +66,32 @@ import Combine
             }
         }
         
-        idleTimer?.invalidate()
-        idleTimer = Timer.scheduledTimer(withTimeInterval: idleTimeout, repeats: false) { [weak self] _ in
-            Task { @MainActor [weak self] in
-                self?.handleIdleTimeout()
+        // Debounce timer recreation: avoid creating new Timer on every mouseMoved event
+        if idleTimer == nil || (now - lastTimerScheduleTime) > 0.5 {
+            idleTimer?.invalidate()
+            lastTimerScheduleTime = now
+            idleTimer = Timer.scheduledTimer(withTimeInterval: idleTimeout, repeats: false) { [weak self] _ in
+                Task { @MainActor [weak self] in
+                    self?.checkIdleTimeout()
+                }
             }
         }
     }
     
-    private func handleIdleTimeout() {
+    private func checkIdleTimeout() {
+        let now = ProcessInfo.processInfo.systemUptime
+        let elapsed = now - lastActivityTime
+        if elapsed < idleTimeout {
+            // Activity occurred recently, wait remaining time
+            let remaining = max(0.5, idleTimeout - elapsed)
+            idleTimer = Timer.scheduledTimer(withTimeInterval: remaining, repeats: false) { [weak self] _ in
+                Task { @MainActor [weak self] in
+                    self?.checkIdleTimeout()
+                }
+            }
+            return
+        }
+        
         guard !isHoveringOrScrubbing else {
             // Postpone if user is hovering over interactive elements or dragging scrubber
             userActivityDetected()
@@ -84,9 +106,5 @@ import Combine
         #if os(macOS)
         NSCursor.setHiddenUntilMouseMoves(true)
         #endif
-    }
-    
-    deinit {
-        // Cleanup resources
     }
 }

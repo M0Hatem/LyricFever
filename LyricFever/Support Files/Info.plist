@@ -5,17 +5,17 @@
 	<key></key>
 	<string></string>
 	<key>SUAllowsAutomaticUpdates</key>
-	<true/>
+	<false/>
 	<key>SUAutomaticallyUpdate</key>
-	<true/>
+	<false/>
 	<key>SUEnableAutomaticChecks</key>
-	<true/>
+	<false/>
 	<key>SUEnableDownloaderService</key>
 	<false/>
 	<key>SUEnableInstallerLauncherService</key>
-	<true/>
+	<false/>
 	<key>SUFeedURL</key>
-	<string>https://aviwad.github.io/SpotifyLyricsInMenubar/appcast.xml</string>
+	<string>https://raw.githubusercontent.com/M0Hatem/LyricFever/main/appcast.xml</string>
 	<key>SUPublicEDKey</key>
 	<string>FSX9uBGItlJwhydb/y9bFiAoZKFy1YaTjgiR/0bcVbI=</string>
 	<key>UTExportedTypeDeclarations</key>

@@ -9,7 +9,6 @@ import SwiftUI
 import SDWebImage
 import ColorKit
 import Combine
-import TipKit
 
 @MainActor
 struct FullscreenView: View {
@@ -136,6 +135,8 @@ struct FullscreenView: View {
             idleCoordinator.stopMonitoring()
         }
         .task(id: viewmodel.artworkImage) {
+            let bgStyle = FullscreenBackgroundStyle(rawValue: viewmodel.userDefaultStorage.fullscreenBackgroundStyle) ?? .fluidArtwork
+            guard viewmodel.fullscreen && (bgStyle == .classicMesh || bgStyle == .solidColor) else { return }
             if let artworkImage = viewmodel.artworkImage,
                let dominantColors = try? artworkImage.dominantColors(with: .best, algorithm: .kMeansClustering) {
                 gradient = dominantColors.map { adjustedColor($0) }
@@ -162,6 +163,11 @@ struct FullscreenView: View {
             idleCoordinator.userActivityDetected()
             return .handled
         }
+        .onKeyPress(KeyEquivalent("t")) {
+            viewmodel.userDefaultStorage.translate.toggle()
+            idleCoordinator.userActivityDetected()
+            return .handled
+        }
         .onKeyPress(KeyEquivalent("?")) {
             withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
                 showShortcutsHUD.toggle()
@@ -169,33 +175,42 @@ struct FullscreenView: View {
             idleCoordinator.userActivityDetected()
             return .handled
         }
-        .onKeyPress(.leftArrow) {
-            if let cur = viewmodel.currentPlayerInstance.currentTime {
-                viewmodel.currentPlayerInstance.seek(to: max(0, (cur / 1000.0) - 5.0))
+        .onKeyPress(phases: .down) { press in
+            if press.modifiers.contains(.command) {
+                if press.key == .leftArrow {
+                    viewmodel.currentPlayerInstance.rewind()
+                    idleCoordinator.userActivityDetected()
+                    return .handled
+                } else if press.key == .rightArrow {
+                    viewmodel.currentPlayerInstance.forward()
+                    idleCoordinator.userActivityDetected()
+                    return .handled
+                }
+            } else if press.modifiers.isEmpty {
+                if press.key == .leftArrow {
+                    let cur = viewmodel.currentPlayerInstance.playerPositionSeconds ?? ((viewmodel.currentPlayerInstance.currentTime ?? 0) / 1000.0)
+                    viewmodel.currentPlayerInstance.seek(to: max(0, cur - 5.0))
+                    idleCoordinator.userActivityDetected()
+                    return .handled
+                } else if press.key == .rightArrow {
+                    let cur = viewmodel.currentPlayerInstance.playerPositionSeconds ?? ((viewmodel.currentPlayerInstance.currentTime ?? 0) / 1000.0)
+                    viewmodel.currentPlayerInstance.seek(to: cur + 5.0)
+                    idleCoordinator.userActivityDetected()
+                    return .handled
+                } else if press.key == .upArrow {
+                    viewmodel.currentPlayerInstance.increaseVolume()
+                    idleCoordinator.userActivityDetected()
+                    return .handled
+                } else if press.key == .downArrow {
+                    viewmodel.currentPlayerInstance.decreaseVolume()
+                    idleCoordinator.userActivityDetected()
+                    return .handled
+                } else if press.key == .escape {
+                    FullscreenWindowController.shared.close()
+                    return .handled
+                }
             }
-            idleCoordinator.userActivityDetected()
-            return .handled
-        }
-        .onKeyPress(.rightArrow) {
-            if let cur = viewmodel.currentPlayerInstance.currentTime {
-                viewmodel.currentPlayerInstance.seek(to: (cur / 1000.0) + 5.0)
-            }
-            idleCoordinator.userActivityDetected()
-            return .handled
-        }
-        .onKeyPress(.upArrow) {
-            viewmodel.currentPlayerInstance.increaseVolume()
-            idleCoordinator.userActivityDetected()
-            return .handled
-        }
-        .onKeyPress(.downArrow) {
-            viewmodel.currentPlayerInstance.decreaseVolume()
-            idleCoordinator.userActivityDetected()
-            return .handled
-        }
-        .onKeyPress(.escape) {
-            FullscreenWindowController.shared.close()
-            return .handled
+            return .ignored
         }
     }
 
@@ -231,7 +246,6 @@ struct FullscreenView: View {
         let lyricsEmpty = viewmodel.currentlyPlayingLyrics.isEmpty
 
         ZStack {
-            #if os(macOS)
             LyricsNSScrollView(
                 lyrics: viewmodel.currentlyPlayingLyrics,
                 currentIndex: viewmodel.currentlyPlayingLyricsIndex,
@@ -253,17 +267,6 @@ struct FullscreenView: View {
                     endPoint: .bottom
                 )
             )
-            #else
-            LyricsScrollView(
-                lyrics: viewmodel.currentlyPlayingLyrics,
-                currentIndex: viewmodel.currentlyPlayingLyricsIndex,
-                romanizedLyrics: viewmodel.romanizedLyrics,
-                chineseConversionLyrics: viewmodel.chineseConversionLyrics,
-                translatedLyric: viewmodel.translatedLyric,
-                blurFullscreen: viewmodel.userDefaultStorage.blurFullscreen,
-                padding: padding
-            )
-            #endif
             
             if lyricsEmpty {
                 ProgressView()

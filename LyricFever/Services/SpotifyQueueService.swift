@@ -43,58 +43,25 @@ struct QueueTrack: Identifiable, Hashable {
             return
         }
         
-        // If a Spotify Web API cookie / token is stored in userDefaultStorage, use it
-        let token = vm.userDefaultStorage.cookie
-        guard !token.isEmpty else {
-            // Populate fallback queue from currently playing track information
-            if let name = vm.currentlyPlayingName, let artist = vm.currentlyPlayingArtist {
-                currentlyPlayingTrack = QueueTrack(
-                    id: vm.currentlyPlaying ?? UUID().uuidString,
-                    name: name,
-                    artist: artist,
-                    album: vm.currentAlbumName ?? "",
-                    artworkURL: vm.currentArtworkURL,
-                    durationMS: vm.duration,
-                    uri: "spotify:track:\(vm.currentlyPlaying ?? "")",
-                    isCurrentlyPlaying: true
-                )
-            }
-            isLoading = false
-            return
+        // Always populate now-playing info from ViewModel
+        if let name = vm.currentlyPlayingName, let artist = vm.currentlyPlayingArtist {
+            currentlyPlayingTrack = QueueTrack(
+                id: vm.currentlyPlaying ?? UUID().uuidString,
+                name: name,
+                artist: artist,
+                album: vm.currentAlbumName ?? "",
+                artworkURL: vm.currentArtworkURL,
+                durationMS: vm.duration,
+                uri: "spotify:track:\(vm.currentlyPlaying ?? "")",
+                isCurrentlyPlaying: true
+            )
+        } else {
+            currentlyPlayingTrack = nil
         }
         
-        guard let url = URL(string: "https://api.spotify.com/v1/me/player/queue") else {
-            isLoading = false
-            return
-        }
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = "GET"
-        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        
-        do {
-            let (data, response) = try await session.data(for: request)
-            guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
-                isLoading = false
-                return
-            }
-            
-            if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] {
-                // Parse currently_playing
-                if let cp = json["currently_playing"] as? [String: Any],
-                   let track = parseTrack(cp, isCurrent: true) {
-                    currentlyPlayingTrack = track
-                }
-                
-                // Parse queue
-                if let queueList = json["queue"] as? [[String: Any]] {
-                    upcomingTracks = queueList.compactMap { parseTrack($0, isCurrent: false) }
-                }
-            }
-        } catch {
-            errorMessage = error.localizedDescription
-        }
-        
+        // Spotify Web API /v1/me/player/queue requires a valid OAuth 2.0 access token with user-read-playback-state scope.
+        // sp_dc cookie cannot be sent directly as a Bearer token.
+        // Once full OAuth PKCE token exchange is implemented, fetch the up-next queue here.
         isLoading = false
     }
     

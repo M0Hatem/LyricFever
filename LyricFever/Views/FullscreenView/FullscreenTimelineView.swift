@@ -16,36 +16,45 @@ struct FullscreenTimelineView: View {
     @State private var isHovering: Bool = false
     @State private var dragPosition: Double = 0.0 // 0.0 to 1.0
     
-    private var durationSeconds: Double {
+    private var totalDurationSeconds: Double {
+        if let durSec = viewmodel.currentPlayerInstance.durationSeconds, durSec > 0 {
+            return durSec
+        }
         guard let dur = viewmodel.currentPlayerInstance.duration, dur > 0 else {
             return 1.0
         }
         return Double(dur) / 1000.0
     }
     
+    private var rawPositionSeconds: Double {
+        if let pos = viewmodel.currentPlayerInstance.playerPositionSeconds {
+            return max(0.0, pos)
+        }
+        if let cur = viewmodel.currentPlayerInstance.currentTime {
+            return max(0.0, cur / 1000.0)
+        }
+        return 0.0
+    }
+    
     private var currentProgress: Double {
         if isDragging {
             return dragPosition
         }
-        guard let cur = viewmodel.currentPlayerInstance.currentTime, durationSeconds > 0 else {
+        guard totalDurationSeconds > 0 else {
             return 0.0
         }
-        let curSec = cur / 1000.0
-        return min(max(curSec / durationSeconds, 0.0), 1.0)
+        return min(max(rawPositionSeconds / totalDurationSeconds, 0.0), 1.0)
     }
     
     private var displayedElapsedSeconds: Double {
         if isDragging {
-            return dragPosition * durationSeconds
+            return dragPosition * totalDurationSeconds
         }
-        guard let cur = viewmodel.currentPlayerInstance.currentTime else {
-            return 0.0
-        }
-        return max(0.0, cur / 1000.0)
+        return rawPositionSeconds
     }
     
     private var displayedRemainingSeconds: Double {
-        return max(0.0, durationSeconds - displayedElapsedSeconds)
+        return max(0.0, totalDurationSeconds - displayedElapsedSeconds)
     }
 
     var body: some View {
@@ -95,7 +104,7 @@ struct FullscreenTimelineView: View {
                         }
                         .onEnded { value in
                             let finalProgress = max(0.0, min(1.0, Double(value.location.x / width)))
-                            let targetSeconds = finalProgress * durationSeconds
+                            let targetSeconds = finalProgress * totalDurationSeconds
                             viewmodel.currentPlayerInstance.seek(to: targetSeconds)
                             isDragging = false
                             idleCoordinator?.isHoveringOrScrubbing = isHovering

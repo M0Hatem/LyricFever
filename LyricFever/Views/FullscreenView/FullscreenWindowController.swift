@@ -62,8 +62,8 @@ final class FullscreenWindowController: NSObject, NSWindowDelegate {
         fullscreenWindow.makeKeyAndOrderFront(nil)
         ViewModel.shared.fullscreen = true
         
-        // 3. Enter native macOS full screen space
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) {
+        // 3. Enter native macOS full screen space on next run loop cycle
+        DispatchQueue.main.async {
             if !fullscreenWindow.styleMask.contains(.fullScreen) {
                 self.isTransitioning = true
                 fullscreenWindow.toggleFullScreen(nil)
@@ -91,7 +91,7 @@ final class FullscreenWindowController: NSObject, NSWindowDelegate {
         isTransitioning = false
         
         let hasOtherRegularWindow = NSApp.windows.contains(where: {
-            $0.isVisible && $0 != self.window && ($0.identifier?.rawValue == "onboarding" || $0.identifier?.rawValue == "search" || $0.identifier?.rawValue == "update")
+            $0.isVisible && $0 != self.window && $0.canBecomeKey && !NSStringFromClass(type(of: $0)).contains("StatusBar")
         })
         if !hasOtherRegularWindow {
             NSApp.setActivationPolicy(.accessory)

@@ -16,8 +16,12 @@ protocol Player {
     
     // track timing details
     @MainActor
-    var currentTime: TimeInterval? { get }
-    var duration: Int? { get }
+    var currentTime: TimeInterval? { get } // Lyric-sync adjusted position in milliseconds (includes animation/AirPlay/Connect offsets)
+    var duration: Int? { get } // Track duration in milliseconds
+    
+    @MainActor
+    var playerPositionSeconds: Double? { get } // Raw unadjusted player position in seconds (for UI scrubber / timeline / seek)
+    var durationSeconds: Double? { get } // Track duration in seconds (for UI scrubber / timeline)
     
     // player details
     var isAuthorized: Bool { get }
@@ -57,8 +61,10 @@ extension Player {
     func seek(to seconds: Double) {}
     
     var durationAsTimeInterval: TimeInterval? {
-        if let duration {
-            return TimeInterval(duration*1000)
+        if let durationSeconds {
+            return durationSeconds
+        } else if let duration {
+            return Double(duration) / 1000.0
         } else {
             return nil
         }

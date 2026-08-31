@@ -33,8 +33,19 @@ class SpotifyPlayer: Player {
         return playerPosition * 1000 + (viewmodel.spotifyConnectDelay ? Double(viewmodel.userDefaultStorage.spotifyConnectDelayCount) : 0) + (viewmodel.animatedDisplay ? 400 : 0) + (viewmodel.airplayDelay ?  -2000 : 0)
     }
     
+    @MainActor
+    var playerPositionSeconds: Double? {
+        spotifyScript?.playerPosition
+    }
+    
     var duration: Int? {
+        // Spotify AppleScript returns duration in milliseconds
         spotifyScript?.currentTrack?.duration
+    }
+    
+    var durationSeconds: Double? {
+        guard let dur = duration, dur > 0 else { return nil }
+        return Double(dur) / 1000.0
     }
     var isRunning: Bool {
         if NSRunningApplication.runningApplications(withBundleIdentifier: "com.spotify.client").first != nil {
@@ -100,7 +111,8 @@ class SpotifyPlayer: Player {
     }
     
     var supportsQueue: Bool {
-        return true
+        // Disabled until full OAuth PKCE authentication is implemented
+        return false
     }
     
     var artworkImage: NSImage? {

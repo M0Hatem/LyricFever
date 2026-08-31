@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct QueueView: View {
+    @Environment(ViewModel.self) var viewmodel
     @State private var queueService = SpotifyQueueService.shared
 
     var body: some View {
@@ -89,7 +90,7 @@ struct QueueView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .task {
+        .task(id: viewmodel.currentlyPlaying) {
             await queueService.fetchQueue()
         }
     }

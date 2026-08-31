@@ -1,18 +1,13 @@
-//
-//  ArtworkFluidBackgroundView.swift
-//  Lyric Fever
-//
-//  Created by Antigravity on 2026-08-31.
-//
-
 import SwiftUI
 import AppKit
 
+@MainActor
 struct ArtworkFluidBackgroundView: View {
+    @Environment(ViewModel.self) var viewmodel
+    @Environment(\.accessibilityReduceMotion) var reduceMotion
+    
     let artworkImage: NSImage?
     let isPlaying: Bool
-    
-    @Environment(\.accessibilityReduceMotion) var reduceMotion
     
     @State private var currentImage: NSImage?
     @State private var previousImage: NSImage?
@@ -66,10 +61,11 @@ struct ArtworkFluidBackgroundView: View {
     
     @ViewBuilder
     private func fluidLayerStack(image: NSImage, size: CGSize, minDim: CGFloat, maxDim: CGFloat) -> some View {
-        let isPaused = !isPlaying || reduceMotion
+        let isFullscreen = viewmodel.fullscreen
+        let isPaused = !isPlaying || reduceMotion || !isFullscreen || ProcessInfo.processInfo.isLowPowerModeEnabled
         
         TimelineView(.animation(minimumInterval: 1.0 / 20.0, paused: isPaused)) { timeline in
-            let time = reduceMotion ? 0.0 : timeline.date.timeIntervalSinceReferenceDate
+            let time = (reduceMotion || isPaused) ? 0.0 : timeline.date.timeIntervalSinceReferenceDate
             
             // Layer 4 (Largest background layer: 125% max dimension)
             let layer4Scale = maxDim * 1.25
@@ -79,7 +75,7 @@ struct ArtworkFluidBackgroundView: View {
             let layer3Scale = maxDim * 0.85
             let layer3Angle = Angle.degrees((-time * 5.0).truncatingRemainder(dividingBy: 360.0))
             
-            // Layer 2 (Medium orbiting layer: 50% min dimension)
+            // Layer 2 (Medium orbiting layer: 55% min dimension)
             let layer2Scale = minDim * 0.55
             let layer2Angle = Angle.degrees((time * 8.0).truncatingRemainder(dividingBy: 360.0))
             let orbit2Radius = minDim * 0.22
@@ -89,7 +85,7 @@ struct ArtworkFluidBackgroundView: View {
                 height: sin(orbit2Angle) * orbit2Radius
             )
             
-            // Layer 1 (Smallest fast orbiting layer: 35% min dimension)
+            // Layer 1 (Smallest fast orbiting layer: 38% min dimension)
             let layer1Scale = minDim * 0.38
             let layer1Angle = Angle.degrees((-time * 12.0).truncatingRemainder(dividingBy: 360.0))
             let orbit1Radius = minDim * 0.32
