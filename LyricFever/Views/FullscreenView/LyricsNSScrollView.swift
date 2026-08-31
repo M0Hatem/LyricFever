@@ -245,6 +245,7 @@ class NonScrollableScrollView: NSScrollView {
 
 // MARK: - NSViewRepresentable
 
+@MainActor
 struct LyricsNSScrollView: NSViewRepresentable {
 
     let lyrics:                  [LyricLine]
@@ -257,6 +258,7 @@ struct LyricsNSScrollView: NSViewRepresentable {
 
     // MARK: Coordinator
 
+    @MainActor
     class Coordinator: NSObject {
         var scrollView:   NonScrollableScrollView!
         var documentView: LyricsDocumentView!

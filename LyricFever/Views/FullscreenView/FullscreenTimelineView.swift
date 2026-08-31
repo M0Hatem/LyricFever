@@ -7,6 +7,7 @@
 
 import SwiftUI
 
+@MainActor
 struct FullscreenTimelineView: View {
     @Environment(ViewModel.self) var viewmodel
     var idleCoordinator: FullscreenIdleCoordinator?

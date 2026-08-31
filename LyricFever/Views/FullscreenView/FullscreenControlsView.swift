@@ -8,6 +8,7 @@
 import SwiftUI
 import AppKit
 
+@MainActor
 struct FullscreenControlsView: View {
     @Environment(ViewModel.self) var viewmodel
     var idleCoordinator: FullscreenIdleCoordinator?

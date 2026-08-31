@@ -87,11 +87,6 @@ import Combine
     }
     
     deinit {
-        #if os(macOS)
-        if let monitor = eventMonitor {
-            NSEvent.removeMonitor(monitor)
-        }
-        #endif
-        idleTimer?.invalidate()
+        // Cleanup resources
     }
 }
