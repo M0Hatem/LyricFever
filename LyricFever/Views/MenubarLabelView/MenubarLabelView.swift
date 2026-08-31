@@ -7,6 +7,7 @@
 
 import SwiftUI
 
+@MainActor
 struct MenubarLabelView: View {
     @Environment(ViewModel.self) var viewmodel
     

@@ -38,7 +38,7 @@ struct QueueTrack: Identifiable, Hashable {
         
         // Check if Spotify is running and playing
         let vm = ViewModel.shared
-        guard vm.playerType == .spotify else {
+        guard vm.currentPlayer == .spotify else {
             isLoading = false
             return
         }

@@ -7,6 +7,7 @@
 
 import SwiftUI
 
+@MainActor
 struct SearchWindow: View {
     @Environment(ViewModel.self) var viewmodel
     @State var trackName: String = ""
