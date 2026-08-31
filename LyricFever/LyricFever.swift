@@ -236,7 +236,6 @@ struct SpotifyLyricsInMenubarApp: App {
         }
         .windowResizability(.contentSize)
         .windowStyle(.hiddenTitleBar)
-        .windowLevel(.floating)
         Window("Lyric Fever: Searching for \(viewmodel.currentlyPlayingName ?? "-") by \(viewmodel.currentlyPlayingArtist ?? "-")", id: "search") {
             SearchWindow().frame(minWidth: 700, maxWidth: 700, minHeight: 500, maxHeight: 500, alignment: .center)
                 .environment(viewmodel)
@@ -266,7 +265,6 @@ struct SpotifyLyricsInMenubarApp: App {
         }
         .windowResizability(.contentSize)
         .windowStyle(.hiddenTitleBar)
-        .windowLevel(.floating)
     }
 }
 
