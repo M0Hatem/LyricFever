@@ -105,7 +105,7 @@ struct FullscreenTimelineView: View {
                         .onEnded { value in
                             let finalProgress = max(0.0, min(1.0, Double(value.location.x / width)))
                             let targetSeconds = finalProgress * totalDurationSeconds
-                            viewmodel.currentPlayerInstance.seek(to: targetSeconds)
+                            viewmodel.seek(to: targetSeconds)
                             isDragging = false
                             idleCoordinator?.isHoveringOrScrubbing = isHovering
                         }

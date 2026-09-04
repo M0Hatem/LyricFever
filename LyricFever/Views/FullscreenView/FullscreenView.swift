@@ -129,10 +129,36 @@ struct FullscreenView: View {
             // Sync showLyrics with panel state
             if viewmodel.showLyrics && !viewmodel.currentlyPlayingLyrics.isEmpty {
                 viewmodel.fullscreenPanelState = .lyrics
+            } else if viewmodel.fullscreenPanelState == .lyrics && viewmodel.currentlyPlayingLyrics.isEmpty {
+                viewmodel.fullscreenPanelState = .none
             }
         }
         .onDisappear {
             idleCoordinator.stopMonitoring()
+        }
+        .onChange(of: viewmodel.currentlyPlayingLyrics) { oldValue, newValue in
+            if newValue.isEmpty {
+                if viewmodel.fullscreenPanelState == .lyrics && !viewmodel.isFetching {
+                    withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
+                        viewmodel.fullscreenPanelState = .none
+                    }
+                }
+            } else {
+                if viewmodel.showLyrics && viewmodel.fullscreenPanelState == .none {
+                    withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
+                        viewmodel.fullscreenPanelState = .lyrics
+                    }
+                }
+            }
+        }
+        .onChange(of: viewmodel.lyricsIsEmptyPostLoad) { oldValue, newValue in
+            if newValue && viewmodel.currentlyPlayingLyrics.isEmpty {
+                if viewmodel.fullscreenPanelState == .lyrics {
+                    withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
+                        viewmodel.fullscreenPanelState = .none
+                    }
+                }
+            }
         }
         .task(id: viewmodel.artworkImage) {
             let bgStyle = FullscreenBackgroundStyle(rawValue: viewmodel.userDefaultStorage.fullscreenBackgroundStyle) ?? .fluidArtwork
@@ -189,12 +215,12 @@ struct FullscreenView: View {
             } else if press.modifiers.isEmpty {
                 if press.key == .leftArrow {
                     let cur = viewmodel.currentPlayerInstance.playerPositionSeconds ?? ((viewmodel.currentPlayerInstance.currentTime ?? 0) / 1000.0)
-                    viewmodel.currentPlayerInstance.seek(to: max(0, cur - 5.0))
+                    viewmodel.seek(to: max(0, cur - 5.0))
                     idleCoordinator.userActivityDetected()
                     return .handled
                 } else if press.key == .rightArrow {
                     let cur = viewmodel.currentPlayerInstance.playerPositionSeconds ?? ((viewmodel.currentPlayerInstance.currentTime ?? 0) / 1000.0)
-                    viewmodel.currentPlayerInstance.seek(to: cur + 5.0)
+                    viewmodel.seek(to: cur + 5.0)
                     idleCoordinator.userActivityDetected()
                     return .handled
                 } else if press.key == .upArrow {
@@ -268,7 +294,7 @@ struct FullscreenView: View {
                 )
             )
             
-            if lyricsEmpty {
+            if lyricsEmpty && viewmodel.isFetching {
                 ProgressView()
                     .controlSize(.large)
                     .transition(.opacity)

@@ -679,18 +679,19 @@ import MediaRemoteAdapter
         translatedLyric = []
         romanizedLyrics = []
         chineseConversionLyrics = []
+        lyricsIsEmptyPostLoad = false
         
-        if userDefaultStorage.hasOnboarded, let currentlyPlaying = currentlyPlaying, let currentlyPlayingName = currentlyPlayingName, let lyrics = await fetch(for: currentlyPlaying, currentlyPlayingName) {
+        if userDefaultStorage.hasOnboarded, let currentlyPlaying = currentlyPlaying, let currentlyPlayingName = currentlyPlayingName, let lyrics = await fetch(for: currentlyPlaying, currentlyPlayingName), !lyrics.isEmpty {
             setNewLyricsColorTranslationRomanizationAndStartUpdater(with: lyrics)
-//            currentlyPlayingLyrics = lyrics
-//            setBackgroundColor()
-//            romanizeDidChange()
-//            reloadTranslationConfigIfTranslating()
-//            lyricsIsEmptyPostLoad = lyrics.isEmpty
-//            if isPlaying, !currentlyPlayingLyrics.isEmpty, showLyrics, userDefaultStorage.hasOnboarded {
-//                print("STARTING UPDATER")
-//                startLyricUpdater()
-//            }
+        } else {
+            lyricsIsEmptyPostLoad = true
+            #if os(macOS)
+            if fullscreen && fullscreenPanelState == .lyrics {
+                withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
+                    fullscreenPanelState = .none
+                }
+            }
+            #endif
         }
     }
     
@@ -743,15 +744,10 @@ import MediaRemoteAdapter
                 if currentTime < currentlyPlayingLyrics[currentlyPlayingLyricsIndex].startTimeMS {
                     return currentlyPlayingLyrics.firstIndex(where: {$0.startTimeMS > currentTime})
                 }
-                // we've reached the end of the song, we're past the last lyric
-                //TODO: remove these
-                #if os(macOS)
-                currentlyPlayingAppleMusicPersistentID = nil
-                #endif
-                currentlyPlaying = nil
+                // We've reached the end of the song's timed lyrics
                 return nil
             }
-            else if  currentTime > currentlyPlayingLyrics[currentlyPlayingLyricsIndex].startTimeMS, currentTime < currentlyPlayingLyrics[newIndex].startTimeMS {
+            else if currentTime >= currentlyPlayingLyrics[currentlyPlayingLyricsIndex].startTimeMS, currentTime < currentlyPlayingLyrics[newIndex].startTimeMS {
                 print("just the next lyric")
                 return newIndex
             }
@@ -763,32 +759,30 @@ import MediaRemoteAdapter
     
     func lyricUpdater() async throws {
         repeat {
-            guard let currentTime = currentPlayerInstance.currentTime, let lastIndex: Int = upcomingIndex(currentTime) else {
+            guard let currentTime = currentPlayerInstance.currentTime, let nextIndex: Int = upcomingIndex(currentTime) else {
+                // If past the last lyric, keep the last lyric highlighted rather than clearing or resetting
+                if !currentlyPlayingLyrics.isEmpty, let curTime = currentPlayerInstance.currentTime, let last = currentlyPlayingLyrics.last, curTime >= last.startTimeMS {
+                    currentlyPlayingLyricsIndex = currentlyPlayingLyrics.count - 1
+                }
                 stopLyricUpdater()
                 return
             }
-            // If there is no current index (perhaps lyric updater started late and we're mid-way of the first lyric, or the user scrubbed and our index is expired)
-            // Then we set the current index to the one before our anticipated index
-            if currentlyPlayingLyricsIndex == nil && lastIndex > 0 {
-                currentlyPlayingLyricsIndex = lastIndex-1
+            // If there is no current index (updater started late mid-way through a line or after a scrub)
+            if currentlyPlayingLyricsIndex == nil && nextIndex > 0 {
+                currentlyPlayingLyricsIndex = nextIndex - 1
             }
-            let nextTimestamp = currentlyPlayingLyrics[lastIndex].startTimeMS
+            let nextTimestamp = currentlyPlayingLyrics[nextIndex].startTimeMS
             let diff = nextTimestamp - currentTime
-            print("current time: \(currentTime)")
             self.currentTime = CurrentTimeWithStoredDate(currentTime: currentTime)
-            print("next time: \(nextTimestamp)")
-            print("the difference is \(diff)")
-            try await Task.sleep(nanoseconds: UInt64(1000000*diff))
-            print("lyrics exist: \(!currentlyPlayingLyrics.isEmpty)")
-            print("last index: \(lastIndex)")
-            print("currently playing lryics index: \(currentlyPlayingLyricsIndex)")
-            if currentlyPlayingLyrics.count > lastIndex {
-                currentlyPlayingLyricsIndex = lastIndex
-            } else {
-                currentlyPlayingLyricsIndex = nil
-                
+            
+            if diff > 0 {
+                try await Task.sleep(nanoseconds: UInt64(1_000_000 * diff))
             }
-            print(currentlyPlayingLyricsIndex ?? "nil")
+            try Task.checkCancellation()
+            
+            if currentlyPlayingLyrics.indices.contains(nextIndex) {
+                currentlyPlayingLyricsIndex = nextIndex
+            }
         } while !Task.isCancelled
     }
     
@@ -800,19 +794,20 @@ import MediaRemoteAdapter
         // If an index exists, we're unpausing: meaning we must instantly find the current lyric
         if currentlyPlayingLyricsIndex != nil {
             guard let currentTime = currentPlayerInstance.currentTime, let lastIndex: Int = upcomingIndex(currentTime) else {
+                if !currentlyPlayingLyrics.isEmpty, let curTime = currentPlayerInstance.currentTime, let last = currentlyPlayingLyrics.last, curTime >= last.startTimeMS {
+                    currentlyPlayingLyricsIndex = currentlyPlayingLyrics.count - 1
+                }
                 stopLyricUpdater()
                 return
             }
-            // If there is no current index (perhaps lyric updater started late and we're mid-way of the first lyric, or the user scrubbed and our index is expired)
-            // Then we set the current index to the one before our anticipated index
             if lastIndex > 0 {
-                currentlyPlayingLyricsIndex = lastIndex-1
+                currentlyPlayingLyricsIndex = lastIndex - 1
             }
         } else {
             #if os(macOS)
             if currentPlayer == .spotify {
                 currentLyricsDriftFix?.cancel()
-                currentLyricsDriftFix =             // Only run drift fix for new songs
+                currentLyricsDriftFix =
                 Task {
                     try await spotifyPlayer.fixSpotifyLyricDrift()
                 }
@@ -832,12 +827,64 @@ import MediaRemoteAdapter
         Task {
             try await currentLyricsUpdaterTask?.value
         }
-        
     }
     
     func stopLyricUpdater() {
         print("stop called")
         currentLyricsUpdaterTask?.cancel()
+    }
+    
+    // MARK: - Unified Precise Seeking & Lyric Synchronization
+    
+    @MainActor
+    func seekToLyric(at index: Int) {
+        guard currentlyPlayingLyrics.indices.contains(index) else { return }
+        let line = currentlyPlayingLyrics[index]
+        
+        // Calculate offset between raw player position and lyric sync clock
+        let syncOffsetMS: Double
+        if let curTime = currentPlayerInstance.currentTime, let rawSecs = currentPlayerInstance.playerPositionSeconds {
+            syncOffsetMS = curTime - (rawSecs * 1000.0)
+        } else {
+            syncOffsetMS = 400.0 + (animatedDisplay ? 400.0 : 0.0) + (airplayDelay ? -2000.0 : 0.0)
+        }
+        
+        let targetPlayerSeconds = max(0.0, (line.startTimeMS - syncOffsetMS) / 1000.0)
+        
+        // 1. Seek the player audio
+        currentPlayerInstance.seek(to: targetPlayerSeconds)
+        
+        // 2. Immediately update lyric state
+        self.currentlyPlayingLyricsIndex = index
+        self.currentTime = CurrentTimeWithStoredDate(currentTime: line.startTimeMS)
+        
+        // 3. Immediately restart the updater so any sleeping Task wakes up instantly
+        if isPlaying {
+            startLyricUpdater()
+        }
+    }
+    
+    @MainActor
+    func seek(to playerSeconds: Double) {
+        currentPlayerInstance.seek(to: playerSeconds)
+        
+        let syncOffsetMS: Double
+        if let curTime = currentPlayerInstance.currentTime, let rawSecs = currentPlayerInstance.playerPositionSeconds {
+            syncOffsetMS = curTime - (rawSecs * 1000.0)
+        } else {
+            syncOffsetMS = 400.0 + (animatedDisplay ? 400.0 : 0.0) + (airplayDelay ? -2000.0 : 0.0)
+        }
+        
+        let targetLyricMS = (playerSeconds * 1000.0) + syncOffsetMS
+        if !currentlyPlayingLyrics.isEmpty {
+            let matchingIndex = currentlyPlayingLyrics.lastIndex(where: { $0.startTimeMS <= targetLyricMS })
+            self.currentlyPlayingLyricsIndex = matchingIndex
+        }
+        self.currentTime = CurrentTimeWithStoredDate(currentTime: targetLyricMS)
+        
+        if isPlaying {
+            startLyricUpdater()
+        }
     }
     
     func saveCoreData() {
@@ -1054,16 +1101,29 @@ import MediaRemoteAdapter
     #if os(macOS)
     func setNewLyricsColorTranslationRomanizationAndStartUpdater(with newLyrics: [LyricLine]) {
         currentlyPlayingLyrics = newLyrics
+        lyricsIsEmptyPostLoad = newLyrics.isEmpty
         setBackgroundColor()
         fetchTranslationSourceLanguage()
         let _ = reloadTranslationConfigIfTranslating()
-//        romanizeDidChange()
         chinesePreferenceDidChange()
         // we romanize afterwards, in-case the chinese conversion array was populated
         romanizeDidChange()
-        lyricsIsEmptyPostLoad = currentlyPlayingLyrics.isEmpty
-        if isPlaying, !currentlyPlayingLyrics.isEmpty, showLyrics, userDefaultStorage.hasOnboarded {
-            startLyricUpdater()
+        
+        if newLyrics.isEmpty {
+            if fullscreen && fullscreenPanelState == .lyrics {
+                withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
+                    fullscreenPanelState = .none
+                }
+            }
+        } else {
+            if fullscreen && showLyrics && fullscreenPanelState == .none {
+                withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
+                    fullscreenPanelState = .lyrics
+                }
+            }
+            if isPlaying, showLyrics, userDefaultStorage.hasOnboarded {
+                startLyricUpdater()
+            }
         }
     }
     

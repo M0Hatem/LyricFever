@@ -466,10 +466,10 @@ struct LyricsNSScrollView: NSViewRepresentable {
             let distance   = currentIndex.map { abs(i - $0) } ?? 0
             let animDelay  = isPastLine ? 0 : min(Double(distance) * 0.05, 0.3)
 
-            let seekSeconds = element.startTimeMS / 1000.0
+            let lineIndex = i
             view.onLineClick = {
                 Task { @MainActor in
-                    ViewModel.shared.currentPlayerInstance.seek(to: seekSeconds)
+                    ViewModel.shared.seekToLyric(at: lineIndex)
                 }
             }
 
