@@ -27,13 +27,7 @@ struct FullscreenTimelineView: View {
     }
     
     private var rawPositionSeconds: Double {
-        if let pos = viewmodel.currentPlayerInstance.playerPositionSeconds {
-            return max(0.0, pos)
-        }
-        if let cur = viewmodel.currentPlayerInstance.currentTime {
-            return max(0.0, cur / 1000.0)
-        }
-        return 0.0
+        viewmodel.effectivePlayerPositionSeconds
     }
     
     private var currentProgress: Double {

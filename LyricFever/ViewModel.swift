@@ -199,6 +199,8 @@ import MediaRemoteAdapter
     private var currentFetchTask: Task<[LyricLine], Error>?
     private var currentLyricsUpdaterTask: Task<Void,Error>?
     private var currentLyricsDriftFix: Task<Void,Error>?
+    private var lastSeekDate: Date?
+    private var lastSeekLyricMS: Double?
     var isFetching = false
     private var currentAppleMusicFetchTask: Task<Void,Error>?
     
@@ -674,12 +676,17 @@ import MediaRemoteAdapter
     }
     
     func onCurrentlyPlayingIDChange() async {
+        isFetching = true
         currentlyPlayingLyricsIndex = nil
         currentlyPlayingLyrics = []
         translatedLyric = []
         romanizedLyrics = []
         chineseConversionLyrics = []
         lyricsIsEmptyPostLoad = false
+        
+        defer {
+            isFetching = false
+        }
         
         if userDefaultStorage.hasOnboarded, let currentlyPlaying = currentlyPlaying, let currentlyPlayingName = currentlyPlayingName, let lyrics = await fetch(for: currentlyPlaying, currentlyPlayingName), !lyrics.isEmpty {
             setNewLyricsColorTranslationRomanizationAndStartUpdater(with: lyrics)
@@ -734,8 +741,62 @@ import MediaRemoteAdapter
     }
     #endif
 
+    // MARK: - Effective Clocks & Stale IPC Guard
+    
+    @MainActor
+    func effectiveCurrentLyricTime() -> Double? {
+        if let lastSeek = lastSeekDate, let seekTarget = lastSeekLyricMS {
+            let elapsed = Date().timeIntervalSince(lastSeek)
+            if elapsed < 1.5 {
+                let localPredictedTime = seekTarget + (elapsed * 1000.0)
+                if let rawPlayerTime = currentPlayerInstance.currentTime {
+                    // If the player's reported position has caught up to the seek target, clear guard
+                    if abs(rawPlayerTime - localPredictedTime) < 1200 {
+                        self.lastSeekDate = nil
+                        self.lastSeekLyricMS = nil
+                        return rawPlayerTime
+                    }
+                }
+                return localPredictedTime
+            } else {
+                self.lastSeekDate = nil
+                self.lastSeekLyricMS = nil
+            }
+        }
+        return currentPlayerInstance.currentTime
+    }
+    
+    @MainActor
+    var effectivePlayerPositionSeconds: Double {
+        if let lastSeek = lastSeekDate, let seekTarget = lastSeekLyricMS {
+            let elapsed = Date().timeIntervalSince(lastSeek)
+            if elapsed < 1.5 {
+                let syncOffsetMS: Double
+                if let curTime = currentPlayerInstance.currentTime, let rawSecs = currentPlayerInstance.playerPositionSeconds {
+                    syncOffsetMS = curTime - (rawSecs * 1000.0)
+                } else {
+                    syncOffsetMS = 400.0 + (animatedDisplay ? 400.0 : 0.0) + (airplayDelay ? -2000.0 : 0.0)
+                }
+                let localSeconds = max(0.0, ((seekTarget - syncOffsetMS) / 1000.0) + elapsed)
+                if let raw = currentPlayerInstance.playerPositionSeconds {
+                    if abs(raw - localSeconds) < 1.2 {
+                        return raw
+                    }
+                }
+                return localSeconds
+            }
+        }
+        if let pos = currentPlayerInstance.playerPositionSeconds {
+            return max(0.0, pos)
+        }
+        if let cur = currentPlayerInstance.currentTime {
+            return max(0.0, cur / 1000.0)
+        }
+        return 0.0
+    }
+
     func upcomingIndex(_ currentTime: Double) -> Int? {
-        if let currentlyPlayingLyricsIndex {
+        if let currentlyPlayingLyricsIndex, currentlyPlayingLyrics.indices.contains(currentlyPlayingLyricsIndex) {
             let newIndex = currentlyPlayingLyricsIndex + 1
             if newIndex >= currentlyPlayingLyrics.count {
                 print("REACHED LAST LYRIC!!!!!!!!")
@@ -759,10 +820,23 @@ import MediaRemoteAdapter
     
     func lyricUpdater() async throws {
         repeat {
-            guard let currentTime = currentPlayerInstance.currentTime, let nextIndex: Int = upcomingIndex(currentTime) else {
-                // If past the last lyric, keep the last lyric highlighted rather than clearing or resetting
-                if !currentlyPlayingLyrics.isEmpty, let curTime = currentPlayerInstance.currentTime, let last = currentlyPlayingLyrics.last, curTime >= last.startTimeMS {
+            guard let currentTime = effectiveCurrentLyricTime(), let nextIndex: Int = upcomingIndex(currentTime) else {
+                // If past the last lyric, keep the last lyric highlighted briefly, then transition panel
+                if !currentlyPlayingLyrics.isEmpty, let curTime = effectiveCurrentLyricTime(), let last = currentlyPlayingLyrics.last, curTime >= last.startTimeMS {
                     currentlyPlayingLyricsIndex = currentlyPlayingLyrics.count - 1
+                    
+                    // Allow the last lyric line to be read before closing panel and sizing up artwork
+                    let lingerDuration: Double = 4.0
+                    let remainingLinger = max(0.5, (last.startTimeMS + (lingerDuration * 1000.0) - curTime) / 1000.0)
+                    try? await Task.sleep(nanoseconds: UInt64(remainingLinger * 1_000_000_000))
+                    
+                    #if os(macOS)
+                    if fullscreen && fullscreenPanelState == .lyrics {
+                        withAnimation(.spring(response: 0.42, dampingFraction: 0.82)) {
+                            fullscreenPanelState = .none
+                        }
+                    }
+                    #endif
                 }
                 stopLyricUpdater()
                 return
@@ -786,36 +860,38 @@ import MediaRemoteAdapter
         } while !Task.isCancelled
     }
     
-    func startLyricUpdater() {
+    func startLyricUpdater(isSeek: Bool = false) {
         currentLyricsUpdaterTask?.cancel()
         if !isPlaying || currentlyPlayingLyrics.isEmpty || mustUpdateUrgent {
             return
         }
-        // If an index exists, we're unpausing: meaning we must instantly find the current lyric
-        if currentlyPlayingLyricsIndex != nil {
-            guard let currentTime = currentPlayerInstance.currentTime, let lastIndex: Int = upcomingIndex(currentTime) else {
-                if !currentlyPlayingLyrics.isEmpty, let curTime = currentPlayerInstance.currentTime, let last = currentlyPlayingLyrics.last, curTime >= last.startTimeMS {
-                    currentlyPlayingLyricsIndex = currentlyPlayingLyrics.count - 1
+        // If an index exists and we're NOT resuming from an explicit seek, we're unpausing: find current lyric
+        if !isSeek {
+            if currentlyPlayingLyricsIndex != nil {
+                guard let currentTime = effectiveCurrentLyricTime(), let lastIndex: Int = upcomingIndex(currentTime) else {
+                    if !currentlyPlayingLyrics.isEmpty, let curTime = effectiveCurrentLyricTime(), let last = currentlyPlayingLyrics.last, curTime >= last.startTimeMS {
+                        currentlyPlayingLyricsIndex = currentlyPlayingLyrics.count - 1
+                    }
+                    stopLyricUpdater()
+                    return
                 }
-                stopLyricUpdater()
-                return
-            }
-            if lastIndex > 0 {
-                currentlyPlayingLyricsIndex = lastIndex - 1
-            }
-        } else {
-            #if os(macOS)
-            if currentPlayer == .spotify {
-                currentLyricsDriftFix?.cancel()
-                currentLyricsDriftFix =
-                Task {
-                    try await spotifyPlayer.fixSpotifyLyricDrift()
+                if lastIndex > 0 {
+                    currentlyPlayingLyricsIndex = lastIndex - 1
                 }
-                Task {
-                    try await currentLyricsDriftFix?.value
+            } else {
+                #if os(macOS)
+                if currentPlayer == .spotify {
+                    currentLyricsDriftFix?.cancel()
+                    currentLyricsDriftFix =
+                    Task {
+                        try await spotifyPlayer.fixSpotifyLyricDrift()
+                    }
+                    Task {
+                        try await currentLyricsDriftFix?.value
+                    }
                 }
+                #endif
             }
-            #endif
         }
         currentLyricsUpdaterTask = Task {
             do {
@@ -851,6 +927,10 @@ import MediaRemoteAdapter
         
         let targetPlayerSeconds = max(0.0, (line.startTimeMS - syncOffsetMS) / 1000.0)
         
+        // Arm seek guard against stale IPC
+        self.lastSeekDate = Date()
+        self.lastSeekLyricMS = line.startTimeMS
+        
         // 1. Seek the player audio
         currentPlayerInstance.seek(to: targetPlayerSeconds)
         
@@ -858,16 +938,14 @@ import MediaRemoteAdapter
         self.currentlyPlayingLyricsIndex = index
         self.currentTime = CurrentTimeWithStoredDate(currentTime: line.startTimeMS)
         
-        // 3. Immediately restart the updater so any sleeping Task wakes up instantly
+        // 3. Immediately restart the updater with isSeek: true
         if isPlaying {
-            startLyricUpdater()
+            startLyricUpdater(isSeek: true)
         }
     }
     
     @MainActor
     func seek(to playerSeconds: Double) {
-        currentPlayerInstance.seek(to: playerSeconds)
-        
         let syncOffsetMS: Double
         if let curTime = currentPlayerInstance.currentTime, let rawSecs = currentPlayerInstance.playerPositionSeconds {
             syncOffsetMS = curTime - (rawSecs * 1000.0)
@@ -876,6 +954,13 @@ import MediaRemoteAdapter
         }
         
         let targetLyricMS = (playerSeconds * 1000.0) + syncOffsetMS
+        
+        // Arm seek guard against stale IPC
+        self.lastSeekDate = Date()
+        self.lastSeekLyricMS = targetLyricMS
+        
+        currentPlayerInstance.seek(to: playerSeconds)
+        
         if !currentlyPlayingLyrics.isEmpty {
             let matchingIndex = currentlyPlayingLyrics.lastIndex(where: { $0.startTimeMS <= targetLyricMS })
             self.currentlyPlayingLyricsIndex = matchingIndex
@@ -883,7 +968,7 @@ import MediaRemoteAdapter
         self.currentTime = CurrentTimeWithStoredDate(currentTime: targetLyricMS)
         
         if isPlaying {
-            startLyricUpdater()
+            startLyricUpdater(isSeek: true)
         }
     }
     
@@ -1177,6 +1262,9 @@ extension ViewModel {
         print("apple music test called again, cancelling previous")
         currentAppleMusicFetchTask?.cancel()
         let newFetchTask = Task {
+            defer {
+                self.isFetching = false
+            }
             try await self.appleMusicFetch()
         }
         currentAppleMusicFetchTask = newFetchTask
@@ -1184,6 +1272,7 @@ extension ViewModel {
             return try await newFetchTask.value
         } catch {
             print("error \(error)")
+            self.isFetching = false
             return
         }
     }
@@ -1203,12 +1292,9 @@ extension ViewModel {
     
     func appleMusicNetworkFetch() async throws {
         isFetching = true
-//        do {
-//            print("Apple Music Network Fetch: 3 second sleep")
-//            try await Task.sleep(for: .seconds(3))
-//        } catch {
-//            print("Apple Music Network Fetch cancelled during the 3 seconds of sleep")
-//        }
+        defer {
+            isFetching = false
+        }
         print("Apple Music Network Fetch: isFetching set to true")
         // coredata didn't get us anything
 //        try await spotifyLyricProvider.generateAccessToken()

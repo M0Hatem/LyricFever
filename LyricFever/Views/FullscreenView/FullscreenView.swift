@@ -214,12 +214,12 @@ struct FullscreenView: View {
                 }
             } else if press.modifiers.isEmpty {
                 if press.key == .leftArrow {
-                    let cur = viewmodel.currentPlayerInstance.playerPositionSeconds ?? ((viewmodel.currentPlayerInstance.currentTime ?? 0) / 1000.0)
+                    let cur = viewmodel.effectivePlayerPositionSeconds
                     viewmodel.seek(to: max(0, cur - 5.0))
                     idleCoordinator.userActivityDetected()
                     return .handled
                 } else if press.key == .rightArrow {
-                    let cur = viewmodel.currentPlayerInstance.playerPositionSeconds ?? ((viewmodel.currentPlayerInstance.currentTime ?? 0) / 1000.0)
+                    let cur = viewmodel.effectivePlayerPositionSeconds
                     viewmodel.seek(to: cur + 5.0)
                     idleCoordinator.userActivityDetected()
                     return .handled

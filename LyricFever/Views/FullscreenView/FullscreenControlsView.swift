@@ -150,7 +150,7 @@ struct FullscreenControlsView: View {
     }
 
     private func handleRewind() {
-        let position = viewmodel.currentPlayerInstance.playerPositionSeconds ?? ((viewmodel.currentPlayerInstance.currentTime ?? 0) / 1000.0)
+        let position = viewmodel.effectivePlayerPositionSeconds
         if position > 3.0 {
             viewmodel.seek(to: 0)
         } else {
