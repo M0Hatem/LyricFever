@@ -183,6 +183,7 @@ import MediaRemoteAdapter
     var showLyrics = true
     #if os(macOS)
     var fullscreen = false
+    var isFullscreenVisible = true
     var fullscreenPanelState: FullscreenPanelState = .none
     var spotifyConnectDelay: Bool = false
     var airplayDelay: Bool = false

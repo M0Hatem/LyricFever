@@ -62,10 +62,11 @@ struct ArtworkFluidBackgroundView: View {
     @ViewBuilder
     private func fluidLayerStack(image: NSImage, size: CGSize, minDim: CGFloat, maxDim: CGFloat) -> some View {
         let isFullscreen = viewmodel.fullscreen
-        let isPaused = !isPlaying || reduceMotion || !isFullscreen || ProcessInfo.processInfo.isLowPowerModeEnabled
+        let isVisible = viewmodel.isFullscreenVisible
+        let isPaused = reduceMotion || !isFullscreen || !isVisible || ProcessInfo.processInfo.isLowPowerModeEnabled
         
         TimelineView(.animation(minimumInterval: 1.0 / 20.0, paused: isPaused)) { timeline in
-            let time = (reduceMotion || isPaused) ? 0.0 : timeline.date.timeIntervalSinceReferenceDate
+            let time = timeline.date.timeIntervalSinceReferenceDate
             
             // Layer 4 (Largest background layer: 125% max dimension)
             let layer4Scale = maxDim * 1.25

@@ -102,6 +102,15 @@ final class FullscreenWindowController: NSObject, NSWindowDelegate {
     
     func windowDidEnterFullScreen(_ notification: Notification) {
         isTransitioning = false
+        if let win = window {
+            ViewModel.shared.isFullscreenVisible = win.occlusionState.contains(.visible)
+        }
+    }
+    
+    func windowDidChangeOcclusionState(_ notification: Notification) {
+        if let win = window {
+            ViewModel.shared.isFullscreenVisible = win.occlusionState.contains(.visible)
+        }
     }
     
     func windowDidExitFullScreen(_ notification: Notification) {

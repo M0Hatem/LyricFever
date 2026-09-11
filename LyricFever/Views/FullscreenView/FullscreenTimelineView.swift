@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import Combine
 
 @MainActor
 struct FullscreenTimelineView: View {
@@ -15,6 +16,12 @@ struct FullscreenTimelineView: View {
     @State private var isDragging: Bool = false
     @State private var isHovering: Bool = false
     @State private var dragPosition: Double = 0.0 // 0.0 to 1.0
+    @State private var currentPlaybackPosition: Double? = nil
+    
+    // Updates 4 times per second for smooth progress advancement without requiring mouse hover
+    private let playbackTimer = Timer
+        .publish(every: 0.25, on: .main, in: .common)
+        .autoconnect()
     
     private var totalDurationSeconds: Double {
         if let durSec = viewmodel.currentPlayerInstance.durationSeconds, durSec > 0 {
@@ -27,7 +34,10 @@ struct FullscreenTimelineView: View {
     }
     
     private var rawPositionSeconds: Double {
-        viewmodel.effectivePlayerPositionSeconds
+        if isDragging {
+            return dragPosition * totalDurationSeconds
+        }
+        return currentPlaybackPosition ?? viewmodel.effectivePlayerPositionSeconds
     }
     
     private var currentProgress: Double {
@@ -44,7 +54,7 @@ struct FullscreenTimelineView: View {
         if isDragging {
             return dragPosition * totalDurationSeconds
         }
-        return rawPositionSeconds
+        return min(rawPositionSeconds, totalDurationSeconds)
     }
     
     private var displayedRemainingSeconds: Double {
@@ -100,6 +110,7 @@ struct FullscreenTimelineView: View {
                             let finalProgress = max(0.0, min(1.0, Double(value.location.x / width)))
                             let targetSeconds = finalProgress * totalDurationSeconds
                             viewmodel.seek(to: targetSeconds)
+                            currentPlaybackPosition = targetSeconds
                             isDragging = false
                             idleCoordinator?.isHoveringOrScrubbing = isHovering
                         }
@@ -118,6 +129,27 @@ struct FullscreenTimelineView: View {
                 .frame(width: 44, alignment: .leading)
         }
         .padding(.horizontal, 8)
+        .onAppear {
+            updatePlaybackPosition()
+        }
+        .onReceive(playbackTimer) { _ in
+            guard viewmodel.isPlaying, !isDragging else { return }
+            updatePlaybackPosition()
+        }
+        .onChange(of: viewmodel.isPlaying) { _, _ in
+            updatePlaybackPosition()
+        }
+        .onChange(of: viewmodel.currentlyPlaying) { _, _ in
+            updatePlaybackPosition()
+        }
+        .onChange(of: viewmodel.currentTime.currentTime) { _, _ in
+            updatePlaybackPosition()
+        }
+    }
+    
+    private func updatePlaybackPosition() {
+        guard !isDragging else { return }
+        currentPlaybackPosition = viewmodel.effectivePlayerPositionSeconds
     }
     
     private func formatTime(_ seconds: Double) -> String {

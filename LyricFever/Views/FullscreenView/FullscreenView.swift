@@ -244,9 +244,14 @@ struct FullscreenView: View {
 
     @ViewBuilder
     private func artworkContainer(geo: GeometryProxy) -> some View {
-        let maxSide = min(geo.size.width, geo.size.height)
-        let targetDimension: CGFloat = isDocked ? min(maxSide * 0.55, 460) : min(maxSide * 0.65, 580)
-        let cornerRadius: CGFloat = isDocked ? 12 : 16
+        let windowHeight = geo.size.height
+        let windowWidth = geo.size.width
+
+        // Exact 57.6% height proportion matching Apple Music without artificial clamping
+        let targetDimension: CGFloat = isDocked
+            ? min(windowHeight * 0.52, windowWidth * 0.38)
+            : min(windowHeight * 0.576, windowWidth * 0.85)
+        let cornerRadius: CGFloat = 12
 
         Group {
             if let artwork = viewmodel.artworkImage {
